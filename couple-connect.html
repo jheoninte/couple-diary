@@ -363,6 +363,15 @@
                     연결하기
                 </button>
             </div>
+
+            <div class="divider">
+                <div class="divider-line"></div>
+            </div>
+
+            <!-- 메인 페이지로 이동 버튼 -->
+            <button class="btn btn-secondary" onclick="goToDiary()">
+                📖 일기장으로 이동
+            </button>
         </div>
 
         <!-- 연결된 상태 -->
@@ -372,7 +381,7 @@
                 <div class="connected-title">파트너와 연결됨!</div>
                 <div class="connected-subtitle">이제 함께 다이어리를 작성할 수 있어요</div>
                 <div class="partner-info">
-                    <div class="partner-email" id="partnerEmail">partner@example.com</div>
+                    <div class="partner-email" id="partnerEmail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="22524350564c475062475a434f524e470c414d4f">[email&#160;protected]</a></div>
                 </div>
                 <button class="btn btn-primary" onclick="goToDiary()">
                     다이어리 시작하기
@@ -384,7 +393,7 @@
         </div>
     </div>
 
-    <script type="module">
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
@@ -612,11 +621,4 @@
 
         // 성공 메시지
         function showSuccess(message) {
-            const el = document.getElementById('successMessage');
-            el.textContent = message;
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 5000);
-        }
-    </script>
-</body>
-</html>
+            const

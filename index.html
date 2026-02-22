@@ -2247,7 +2247,7 @@
             </div>
         </div>
     </div>
-    <script type="module" src="firebase-sync.js"></script>
+
     <script>
         // 전역 변수
         let currentDate = new Date();
@@ -2463,10 +2463,10 @@
             // 자동 저장 설정
             setupAutosave();
             
-            // 데모 데이터 (처음 방문시)
-            if (Object.keys(entries).length === 0) {
-                addDemoData();
-            }
+            // 데모 데이터 제거 (Firebase 사용)
+            // if (Object.keys(entries).length === 0) {
+            //     addDemoData();
+            // }
         }
 
         // 데모 데이터 추가
