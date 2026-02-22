@@ -75,11 +75,17 @@ async function checkCoupleConnection() {
 
         const coupleData = coupleDoc.data();
         
-        if (!coupleData.user1 || !coupleData.user2) {
+        if (!coupleData.user1) {
             return false;
         }
 
-        partnerUserId = coupleData.user1 === currentUser.uid ? coupleData.user2 : coupleData.user1;
+        // user2가 아직 연결 안 된 경우 처리
+        if (coupleData.user2) {
+            partnerUserId = coupleData.user1 === currentUser.uid ? coupleData.user2 : coupleData.user1;
+        } else {
+            // user2가 없으면 partnerUserId는 null (혼자 사용)
+            partnerUserId = null;
+        }
         coupleDocRef = doc(db, 'couples', coupleId);
         
         console.log('✅ 커플 연결됨');
@@ -103,7 +109,8 @@ async function loadDataFromFirestore() {
             // myEntries 구조 확인
             if (data.myEntries) {
                 entries = data.myEntries[myUserId] || {};
-                partnerEntries = data.myEntries[partnerUserId] || {};
+                // partnerUserId가 null이면 빈 객체
+                partnerEntries = partnerUserId ? (data.myEntries[partnerUserId] || {}) : {};
             }
             
             // 설정 로드
@@ -115,6 +122,9 @@ async function loadDataFromFirestore() {
             
             if (data.settings && data.settings[partnerUserId]) {
                 partnerIcon = data.settings[partnerUserId].icon || '🐱';
+            } else {
+                // 파트너가 아직 연결 안 된 경우 기본 아이콘
+                partnerIcon = '🐱';
             }
             
             if (data.anniversaries) anniversaries = data.anniversaries;
@@ -180,7 +190,7 @@ function startRealtimeSync() {
             // 내 일기와 파트너 일기 로드
             if (data.myEntries) {
                 entries = data.myEntries[myUserId] || {};
-                partnerEntries = data.myEntries[partnerUserId] || {};
+                partnerEntries = partnerUserId ? (data.myEntries[partnerUserId] || {}) : {};
             }
             
             // 설정 로드
@@ -193,7 +203,11 @@ function startRealtimeSync() {
                 
                 if (data.settings[partnerUserId]) {
                     partnerIcon = data.settings[partnerUserId].icon || '🐱';
+                } else {
+                    partnerIcon = '🐱';
                 }
+            } else {
+                partnerIcon = '🐱';
             }
             
             anniversaries = data.anniversaries || [];
