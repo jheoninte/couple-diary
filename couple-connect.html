@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>커플 연결 - 우리의 공간</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #FFF8F0 0%, #FFE5EC 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header-icon {
+            font-size: 80px;
+            margin-bottom: 16px;
+        }
+
+        .header-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: #FF6B9D;
+            margin-bottom: 8px;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: #9A8F97;
+            line-height: 1.6;
+        }
+
+        .status-card {
+            background: #FFF8F0;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .status-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2D3142;
+            margin-bottom: 4px;
+        }
+
+        .status-email {
+            font-size: 14px;
+            color: #9A8F97;
+        }
+
+        .section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2D3142;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-description {
+            font-size: 14px;
+            color: #9A8F97;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .code-display {
+            background: linear-gradient(135deg, #FF6B9D, #C06C84);
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .code-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+        }
+
+        .code-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #2D3142;
+        }
+
+        .code-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #FFE5EC;
+            border-radius: 12px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: #FF6B9D;
+            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FF6B9D, #C06C84);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 107, 157, 0.3);
+        }
+
+        .btn-secondary {
+            background: #FFF8F0;
+            color: #FF6B9D;
+            margin-top: 12px;
+        }
+
+        .btn-secondary:hover {
+            background: #FFE5EC;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 32px 0;
+            gap: 16px;
+        }
+
+        .divider-line {
+            flex: 1;
+            height: 1px;
+            background: #FFE5EC;
+        }
+
+        .divider-text {
+            font-size: 14px;
+            color: #9A8F97;
+        }
+
+        .error-message {
+            background: #FFE5EC;
+            color: #E63946;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #E1F5EF;
+            color: #4DB396;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .connected-card {
+            background: linear-gradient(135deg, #E1F5EF, #C1D8C1);
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .connected-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .connected-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2D3142;
+            margin-bottom: 8px;
+        }
+
+        .connected-subtitle {
+            font-size: 14px;
+            color: #9A8F97;
+            margin-bottom: 24px;
+        }
+
+        .partner-info {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .partner-email {
+            font-size: 16px;
+            color: #2D3142;
+            font-weight: 500;
+        }
+
+        #connectedSection {
+            display: none;
+        }
+
+        #notConnectedSection {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">💑</div>
+            <h1 class="header-title">커플 연결</h1>
+            <p class="header-subtitle">커플 코드로 연결하여<br>함께 다이어리를 공유하세요</p>
+        </div>
+
+        <div class="status-card">
+            <div class="status-icon">👤</div>
+            <div class="status-text" id="userEmail">로그인 중...</div>
+            <div class="status-email">나의 계정</div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <!-- 연결 안 된 상태 -->
+        <div id="notConnectedSection">
+            <!-- 코드 생성 섹션 -->
+            <div class="section">
+                <div class="section-title">
+                    <span>✨</span>
+                    커플 코드 생성하기
+                </div>
+                <div class="section-description">
+                    새로운 커플 코드를 생성하고 파트너에게 공유하세요
+                </div>
+                <button class="btn btn-primary" id="generateCodeBtn" onclick="generateCoupleCode()">
+                    커플 코드 생성하기
+                </button>
+            </div>
+
+            <div id="generatedCodeSection" style="display: none;">
+                <div class="code-display">
+                    <div class="code-label">나의 커플 코드</div>
+                    <div class="code-value" id="generatedCode">LOADING...</div>
+                </div>
+                <div class="section-description" style="text-align: center;">
+                    ⬆️ 이 코드를 파트너에게 알려주세요!
+                </div>
+            </div>
+
+            <div class="divider">
+                <div class="divider-line"></div>
+                <div class="divider-text">또는</div>
+                <div class="divider-line"></div>
+            </div>
+
+            <!-- 코드 입력 섹션 -->
+            <div class="section">
+                <div class="section-title">
+                    <span>🔗</span>
+                    파트너와 연결하기
+                </div>
+                <div class="section-description">
+                    파트너가 생성한 커플 코드를 입력하세요
+                </div>
+                <div class="input-group">
+                    <label class="input-label">커플 코드 입력</label>
+                    <input type="text" class="code-input" id="coupleCodeInput" placeholder="LOVE1234" maxlength="8">
+                </div>
+                <button class="btn btn-primary" id="connectBtn" onclick="connectWithCode()">
+                    연결하기
+                </button>
+            </div>
+        </div>
+
+        <!-- 연결된 상태 -->
+        <div id="connectedSection">
+            <div class="connected-card">
+                <div class="connected-icon">💕</div>
+                <div class="connected-title">파트너와 연결됨!</div>
+                <div class="connected-subtitle">이제 함께 다이어리를 작성할 수 있어요</div>
+                <div class="partner-info">
+                    <div class="partner-email" id="partnerEmail">partner@example.com</div>
+                </div>
+                <button class="btn btn-primary" onclick="goToDiary()">
+                    다이어리 시작하기
+                </button>
+                <button class="btn btn-secondary" onclick="disconnectCouple()">
+                    연결 해제
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBoEZNvbq_eYne5y1Ejm5IwLa2WDHfdYQs",
+            authDomain: "couple-diary-75157.firebaseapp.com",
+            projectId: "couple-diary-75157",
+            storageBucket: "couple-diary-75157.firebasestorage.app",
+            messagingSenderId: "681335251233",
+            appId: "1:681335251233:web:fb6865fe60058287fd9e60"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        // 로그인 체크
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentUser = user;
+            document.getElementById('userEmail').textContent = user.email;
+
+            // 연결 상태 확인
+            await checkConnectionStatus();
+        });
+
+        // 연결 상태 확인
+        async function checkConnectionStatus() {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                
+                if (userDoc.exists() && userDoc.data().coupleId) {
+                    // 이미 연결됨
+                    const coupleDoc = await getDoc(doc(db, 'couples', userDoc.data().coupleId));
+                    
+                    if (coupleDoc.exists()) {
+                        const coupleData = coupleDoc.data();
+                        const partnerId = coupleData.user1 === currentUser.uid ? coupleData.user2 : coupleData.user1;
+                        
+                        if (partnerId) {
+                            const partnerDoc = await getDoc(doc(db, 'users', partnerId));
+                            document.getElementById('partnerEmail').textContent = partnerDoc.data().email || '알 수 없음';
+                            
+                            document.getElementById('notConnectedSection').style.display = 'none';
+                            document.getElementById('connectedSection').style.display = 'block';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('연결 상태 확인 실패:', error);
+            }
+        }
+
+        // 커플 코드 생성
+        window.generateCoupleCode = async function() {
+            const btn = document.getElementById('generateCodeBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                // 랜덤 코드 생성
+                const code = generateRandomCode();
+                const coupleId = `couple_${Date.now()}`;
+
+                // Firestore에 저장
+                await setDoc(doc(db, 'couples', coupleId), {
+                    code: code,
+                    user1: currentUser.uid,
+                    user2: null,
+                    createdAt: new Date().toISOString(),
+                    createdBy: currentUser.email
+                });
+
+                // 사용자 문서 업데이트
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    email: currentUser.email,
+                    coupleId: coupleId,
+                    coupleCode: code
+                }, { merge: true });
+
+                // UI 업데이트
+                document.getElementById('generatedCode').textContent = code;
+                document.getElementById('generatedCodeSection').style.display = 'block';
+                showSuccess('커플 코드가 생성되었습니다! 파트너에게 코드를 알려주세요.');
+
+                btn.disabled = false;
+                btn.textContent = '새 코드 생성';
+            } catch (error) {
+                console.error('코드 생성 실패:', error);
+                showError('코드 생성에 실패했습니다. 다시 시도해주세요.');
+                btn.disabled = false;
+                btn.textContent = '커플 코드 생성하기';
+            }
+        };
+
+        // 코드로 연결
+        window.connectWithCode = async function() {
+            const code = document.getElementById('coupleCodeInput').value.trim().toUpperCase();
+            
+            if (!code) {
+                showError('커플 코드를 입력해주세요.');
+                return;
+            }
+
+            const btn = document.getElementById('connectBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                // 코드로 커플 문서 찾기
+                const couplesRef = collection(db, 'couples');
+                const q = query(couplesRef, where('code', '==', code));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    showError('유효하지 않은 커플 코드입니다.');
+                    btn.disabled = false;
+                    btn.textContent = '연결하기';
+                    return;
+                }
+
+                const coupleDoc = querySnapshot.docs[0];
+                const coupleData = coupleDoc.data();
+
+                // 이미 두 명이 연결되어 있는지 확인
+                if (coupleData.user2) {
+                    showError('이미 다른 사용자와 연결된 코드입니다.');
+                    btn.disabled = false;
+                    btn.textContent = '연결하기';
+                    return;
+                }
+
+                // 자기 자신의 코드인지 확인
+                if (coupleData.user1 === currentUser.uid) {
+                    showError('본인이 생성한 코드입니다. 파트너에게 이 코드를 알려주세요.');
+                    btn.disabled = false;
+                    btn.textContent = '연결하기';
+                    return;
+                }
+
+                // 커플 문서 업데이트
+                await updateDoc(doc(db, 'couples', coupleDoc.id), {
+                    user2: currentUser.uid,
+                    connectedAt: new Date().toISOString()
+                });
+
+                // 사용자 문서 업데이트
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    email: currentUser.email,
+                    coupleId: coupleDoc.id,
+                    coupleCode: code
+                }, { merge: true });
+
+                showSuccess('파트너와 성공적으로 연결되었습니다!');
+                
+                // 1초 후 연결 상태로 전환
+                setTimeout(() => {
+                    checkConnectionStatus();
+                }, 1000);
+
+            } catch (error) {
+                console.error('연결 실패:', error);
+                showError('연결에 실패했습니다. 다시 시도해주세요.');
+                btn.disabled = false;
+                btn.textContent = '연결하기';
+            }
+        };
+
+        // 연결 해제
+        window.disconnectCouple = async function() {
+            if (!confirm('정말로 파트너와의 연결을 해제하시겠습니까?\n공유된 일기는 유지됩니다.')) {
+                return;
+            }
+
+            try {
+                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                const coupleId = userDoc.data().coupleId;
+
+                // 사용자 문서에서 커플 정보 제거
+                await updateDoc(doc(db, 'users', currentUser.uid), {
+                    coupleId: null,
+                    coupleCode: null
+                });
+
+                showSuccess('연결이 해제되었습니다.');
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } catch (error) {
+                console.error('연결 해제 실패:', error);
+                showError('연결 해제에 실패했습니다.');
+            }
+        };
+
+        // 다이어리로 이동
+        window.goToDiary = function() {
+            window.location.href = 'index.html';
+        };
+
+        // 랜덤 코드 생성
+        function generateRandomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        // 에러 메시지
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 5000);
+        }
+
+        // 성공 메시지
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 5000);
+        }
+    </script>
+</body>
+</html>
