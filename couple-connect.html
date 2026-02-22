@@ -381,7 +381,7 @@
                 <div class="connected-title">파트너와 연결됨!</div>
                 <div class="connected-subtitle">이제 함께 다이어리를 작성할 수 있어요</div>
                 <div class="partner-info">
-                    <div class="partner-email" id="partnerEmail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="22524350564c475062475a434f524e470c414d4f">[email&#160;protected]</a></div>
+                    <div class="partner-email" id="partnerEmail">partner@example.com</div>
                 </div>
                 <button class="btn btn-primary" onclick="goToDiary()">
                     다이어리 시작하기
@@ -393,55 +393,74 @@
         </div>
     </div>
 
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+    <script type="module">
+        // Firebase 모듈을 동적으로 로드하고 에러 처리
+        let firebaseApp, firebaseAuth, firebaseFirestore;
+        let app, auth, db, currentUser = null;
+        
+        async function initFirebase() {
+            try {
+                // Firebase 모듈 동적 로드
+                firebaseApp = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
+                firebaseAuth = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
+                firebaseFirestore = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBoEZNvbq_eYne5y1Ejm5IwLa2WDHfdYQs",
-            authDomain: "couple-diary-75157.firebaseapp.com",
-            projectId: "couple-diary-75157",
-            storageBucket: "couple-diary-75157.firebasestorage.app",
-            messagingSenderId: "681335251233",
-            appId: "1:681335251233:web:fb6865fe60058287fd9e60"
-        };
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBoEZNvbq_eYne5y1Ejm5IwLa2WDHfdYQs",
+                    authDomain: "couple-diary-75157.firebaseapp.com",
+                    projectId: "couple-diary-75157",
+                    storageBucket: "couple-diary-75157.firebasestorage.app",
+                    messagingSenderId: "681335251233",
+                    appId: "1:681335251233:web:fb6865fe60058287fd9e60"
+                };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+                app = firebaseApp.initializeApp(firebaseConfig);
+                auth = firebaseAuth.getAuth(app);
+                db = firebaseFirestore.getFirestore(app);
 
-        let currentUser = null;
+                console.log('✅ Firebase 초기화 완료');
 
-        // 로그인 체크
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
+                // 로그인 체크
+                firebaseAuth.onAuthStateChanged(auth, async (user) => {
+                    if (!user) {
+                        console.log('❌ 로그인 안 됨 → login.html로 이동');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    currentUser = user;
+                    document.getElementById('userEmail').textContent = user.email;
+                    console.log('✅ 로그인 확인:', user.email);
+
+                    // 연결 상태 확인
+                    await checkConnectionStatus();
+                });
+
+            } catch (error) {
+                console.error('❌ Firebase 초기화 실패:', error);
+                showError('Firebase 연결에 실패했습니다. 페이지를 새로고침해주세요.');
+                
+                // 3초 후 로그인 페이지로 이동
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
             }
-
-            currentUser = user;
-            document.getElementById('userEmail').textContent = user.email;
-
-            // 연결 상태 확인
-            await checkConnectionStatus();
-        });
+        }
 
         // 연결 상태 확인
         async function checkConnectionStatus() {
             try {
-                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                const userDoc = await firebaseFirestore.getDoc(firebaseFirestore.doc(db, 'users', currentUser.uid));
                 
                 if (userDoc.exists() && userDoc.data().coupleId) {
-                    // 이미 연결됨
-                    const coupleDoc = await getDoc(doc(db, 'couples', userDoc.data().coupleId));
+                    const coupleDoc = await firebaseFirestore.getDoc(firebaseFirestore.doc(db, 'couples', userDoc.data().coupleId));
                     
                     if (coupleDoc.exists()) {
                         const coupleData = coupleDoc.data();
                         const partnerId = coupleData.user1 === currentUser.uid ? coupleData.user2 : coupleData.user1;
                         
                         if (partnerId) {
-                            const partnerDoc = await getDoc(doc(db, 'users', partnerId));
+                            const partnerDoc = await firebaseFirestore.getDoc(firebaseFirestore.doc(db, 'users', partnerId));
                             document.getElementById('partnerEmail').textContent = partnerDoc.data().email || '알 수 없음';
                             
                             document.getElementById('notConnectedSection').style.display = 'none';
@@ -461,12 +480,10 @@
             btn.innerHTML = '<span class="loading"></span>';
 
             try {
-                // 랜덤 코드 생성
                 const code = generateRandomCode();
                 const coupleId = `couple_${Date.now()}`;
 
-                // Firestore에 저장
-                await setDoc(doc(db, 'couples', coupleId), {
+                await firebaseFirestore.setDoc(firebaseFirestore.doc(db, 'couples', coupleId), {
                     code: code,
                     user1: currentUser.uid,
                     user2: null,
@@ -474,14 +491,12 @@
                     createdBy: currentUser.email
                 });
 
-                // 사용자 문서 업데이트
-                await setDoc(doc(db, 'users', currentUser.uid), {
+                await firebaseFirestore.setDoc(firebaseFirestore.doc(db, 'users', currentUser.uid), {
                     email: currentUser.email,
                     coupleId: coupleId,
                     coupleCode: code
                 }, { merge: true });
 
-                // UI 업데이트
                 document.getElementById('generatedCode').textContent = code;
                 document.getElementById('generatedCodeSection').style.display = 'block';
                 showSuccess('커플 코드가 생성되었습니다! 파트너에게 코드를 알려주세요.');
@@ -510,10 +525,9 @@
             btn.innerHTML = '<span class="loading"></span>';
 
             try {
-                // 코드로 커플 문서 찾기
-                const couplesRef = collection(db, 'couples');
-                const q = query(couplesRef, where('code', '==', code));
-                const querySnapshot = await getDocs(q);
+                const couplesRef = firebaseFirestore.collection(db, 'couples');
+                const q = firebaseFirestore.query(couplesRef, firebaseFirestore.where('code', '==', code));
+                const querySnapshot = await firebaseFirestore.getDocs(q);
 
                 if (querySnapshot.empty) {
                     showError('유효하지 않은 커플 코드입니다.');
@@ -525,7 +539,6 @@
                 const coupleDoc = querySnapshot.docs[0];
                 const coupleData = coupleDoc.data();
 
-                // 이미 두 명이 연결되어 있는지 확인
                 if (coupleData.user2) {
                     showError('이미 다른 사용자와 연결된 코드입니다.');
                     btn.disabled = false;
@@ -533,7 +546,6 @@
                     return;
                 }
 
-                // 자기 자신의 코드인지 확인
                 if (coupleData.user1 === currentUser.uid) {
                     showError('본인이 생성한 코드입니다. 파트너에게 이 코드를 알려주세요.');
                     btn.disabled = false;
@@ -541,14 +553,12 @@
                     return;
                 }
 
-                // 커플 문서 업데이트
-                await updateDoc(doc(db, 'couples', coupleDoc.id), {
+                await firebaseFirestore.updateDoc(firebaseFirestore.doc(db, 'couples', coupleDoc.id), {
                     user2: currentUser.uid,
                     connectedAt: new Date().toISOString()
                 });
 
-                // 사용자 문서 업데이트
-                await setDoc(doc(db, 'users', currentUser.uid), {
+                await firebaseFirestore.setDoc(firebaseFirestore.doc(db, 'users', currentUser.uid), {
                     email: currentUser.email,
                     coupleId: coupleDoc.id,
                     coupleCode: code
@@ -556,7 +566,6 @@
 
                 showSuccess('파트너와 성공적으로 연결되었습니다!');
                 
-                // 1초 후 연결 상태로 전환
                 setTimeout(() => {
                     checkConnectionStatus();
                 }, 1000);
@@ -576,11 +585,10 @@
             }
 
             try {
-                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                const userDoc = await firebaseFirestore.getDoc(firebaseFirestore.doc(db, 'users', currentUser.uid));
                 const coupleId = userDoc.data().coupleId;
 
-                // 사용자 문서에서 커플 정보 제거
-                await updateDoc(doc(db, 'users', currentUser.uid), {
+                await firebaseFirestore.updateDoc(firebaseFirestore.doc(db, 'users', currentUser.uid), {
                     coupleId: null,
                     coupleCode: null
                 });
@@ -621,4 +629,14 @@
 
         // 성공 메시지
         function showSuccess(message) {
-            const
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 5000);
+        }
+
+        // Firebase 초기화 시작
+        initFirebase();
+    </script>
+</body>
+</html>
