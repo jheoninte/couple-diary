@@ -1,0 +1,3419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리의 공간 - 커플 다이어리</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF6B9D;
+            --secondary: #C06C84;
+            --accent: #F8B195;
+            --soft-pink: #FFE5EC;
+            --cream: #FFF8F0;
+            --deep-purple: #6C5B7B;
+            --text-dark: #2D3142;
+            --text-light: #9A8F97;
+            --success: #A8DADC;
+            --heart-red: #E63946;
+            
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        /* 테마 색상 프리셋 */
+        [data-theme="pink"] {
+            --primary: #FF6B9D;
+            --secondary: #C06C84;
+            --accent: #F8B195;
+            --soft-pink: #FFE5EC;
+            --cream: #FFF8F0;
+        }
+
+        [data-theme="lavender"] {
+            --primary: #9B8ED7;
+            --secondary: #7B68BB;
+            --accent: #B8A6D9;
+            --soft-pink: #E8E3F3;
+            --cream: #F5F3F9;
+        }
+
+        [data-theme="mint"] {
+            --primary: #6DCCB1;
+            --secondary: #4DB396;
+            --accent: #8FD9C4;
+            --soft-pink: #E1F5EF;
+            --cream: #F0FAF7;
+        }
+
+        [data-theme="peach"] {
+            --primary: #FFB088;
+            --secondary: #E89A72;
+            --accent: #FFC9A8;
+            --soft-pink: #FFF0E8;
+            --cream: #FFF7F2;
+        }
+
+        [data-theme="coral"] {
+            --primary: #FF9AAD;
+            --secondary: #E67A8E;
+            --accent: #FFB5C5;
+            --soft-pink: #FFE8ED;
+            --cream: #FFF5F7;
+        }
+
+        [data-theme="sky"] {
+            --primary: #7EC8E3;
+            --secondary: #5AADC7;
+            --accent: #A3D8ED;
+            --soft-pink: #E5F5FA;
+            --cream: #F0F9FC;
+        }
+
+        [data-theme="rose"] {
+            --primary: #E85D75;
+            --secondary: #C94B61;
+            --accent: #F08094;
+            --soft-pink: #FDE7EB;
+            --cream: #FFF2F4;
+        }
+
+        [data-theme="lilac"] {
+            --primary: #C997D8;
+            --secondary: #A87BBF;
+            --accent: #D9B3E6;
+            --soft-pink: #F3E9F7;
+            --cream: #FAF5FC;
+        }
+
+        [data-theme="sage"] {
+            --primary: #A8C5A8;
+            --secondary: #8FAF8F;
+            --accent: #C1D8C1;
+            --soft-pink: #EEF5EE;
+            --cream: #F7FAF7;
+        }
+
+        [data-theme="mauve"] {
+            --primary: #B88BA7;
+            --secondary: #9E7690;
+            --accent: #CCA3BC;
+            --soft-pink: #F2EBF0;
+            --cream: #F9F5F8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--soft-pink) 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
+
+        /* 애니메이션 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            10%, 30% { transform: scale(0.9); }
+            20%, 40% { transform: scale(1.1); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+
+        /* 헤더 */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 28px 20px 24px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .header-hearts {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .heart {
+            animation: heartBeat 1.5s ease-in-out infinite;
+            font-size: 14px;
+        }
+
+        .heart:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .heart:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        /* 컨테이너 */
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        /* 탭 네비게이션 */
+        .tab-nav {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 24px;
+            background: white;
+            padding: 8px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab-btn {
+            padding: 14px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-light);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .tab-btn.active {
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .tab-btn.active::before {
+            opacity: 1;
+        }
+
+        .tab-icon {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        /* 섹션 */
+        .section {
+            display: none;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* 달력 */
+        .calendar-card {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 20px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-month {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .calendar-nav button {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--soft-pink);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--primary);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .calendar-nav button:active {
+            transform: scale(0.95);
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-light);
+            padding: 8px 0;
+        }
+
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--cream);
+            border: 2px solid transparent;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            padding: 4px 2px;
+        }
+
+        .day:hover {
+            background: var(--soft-pink);
+            transform: scale(1.08);
+        }
+
+        .day.other-month {
+            color: #ddd;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .day.today {
+            border-color: var(--primary);
+            font-weight: 600;
+        }
+
+        .day.selected {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-color: transparent;
+            transform: scale(1.05);
+        }
+
+        .day.selected .day-number {
+            color: white;
+        }
+
+        /* 선택된 날짜에서 이모지는 원래 색상 유지 */
+        .day.selected .day-icons {
+            /* 필터 제거 - 이모지는 색상 변경 불가 */
+        }
+
+        /* 기념일 아이콘은 원래 색상 유지 */
+        .anniversary-icon {
+            filter: none !important;
+            -webkit-filter: none !important;
+        }
+
+        .day.selected .anniversary-icon {
+            filter: none !important;
+            -webkit-filter: none !important;
+            opacity: 1 !important;
+        }
+
+        /* 일기 작성 아이콘 표시 */
+        .day-number {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .day-icons {
+            display: flex;
+            gap: 2px;
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .day.has-entry .day-icons,
+        .day.has-both .day-icons {
+            display: flex;
+        }
+
+        /* 공휴일 표시 조정 */
+        .day.holiday .day-number {
+            color: var(--heart-red);
+        }
+
+        .day.holiday::before {
+            content: attr(data-holiday);
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 7px;
+            color: var(--heart-red);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+            font-weight: 500;
+        }
+
+        /* 일기 작성 폼 */
+        .diary-form {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .form-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-icon {
+            font-size: 18px;
+        }
+
+        /* 날짜 선택 */
+        .date-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--soft-pink);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            background: var(--cream);
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+        }
+
+        /* 기분 선택 */
+        .mood-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .mood-btn {
+            aspect-ratio: 1;
+            border: 2px solid var(--soft-pink);
+            background: white;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 28px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mood-btn:hover {
+            transform: scale(1.1) rotate(10deg);
+            border-color: var(--primary);
+        }
+
+        .mood-btn.selected {
+            background: var(--soft-pink);
+            border-color: var(--primary);
+            transform: scale(1.1);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* 일기 내용 */
+        .diary-textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid var(--soft-pink);
+            border-radius: 16px;
+            font-family: inherit;
+            font-size: 15px;
+            line-height: 1.6;
+            resize: vertical;
+            min-height: 160px;
+            transition: all 0.2s ease;
+            background: var(--cream);
+        }
+
+        .diary-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+            background: white;
+        }
+
+        .diary-textarea::placeholder {
+            color: var(--text-light);
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 6px;
+        }
+
+        /* 사진 업로드 */
+        .photo-upload-area {
+            border: 2px dashed var(--soft-pink);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            background: var(--cream);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .photo-upload-area:hover {
+            border-color: var(--primary);
+            background: var(--soft-pink);
+        }
+
+        .photo-upload-area.drag-over {
+            border-color: var(--primary);
+            background: var(--soft-pink);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        #photoInput {
+            display: none;
+        }
+
+        .photo-preview {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-remove {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .preview-remove:hover {
+            background: var(--heart-red);
+            transform: scale(1.1);
+        }
+
+        /* 저장 버튼 */
+        .save-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+            margin-top: 8px;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .save-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 일기 카드 */
+        .diary-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-md);
+            border-left: 4px solid var(--primary);
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .diary-card.partner {
+            border-left-color: var(--success);
+        }
+
+        .diary-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .diary-writer {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diary-writer.partner-writer {
+            color: var(--success);
+        }
+
+        .diary-date {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .diary-mood {
+            font-size: 32px;
+        }
+
+        .diary-content {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+        }
+
+        .diary-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .diary-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .diary-image:hover {
+            transform: scale(1.05);
+        }
+
+        .diary-actions {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid var(--soft-pink);
+            padding-top: 12px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--soft-pink);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-dark);
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--soft-pink);
+            border-color: var(--primary);
+        }
+
+        .action-btn.liked {
+            background: var(--soft-pink);
+            color: var(--heart-red);
+            border-color: var(--heart-red);
+        }
+
+        /* 댓글 */
+        .comments-section {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--soft-pink);
+        }
+
+        .comment {
+            background: var(--cream);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .comment-author {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .comment-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 11px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .comment-action-btn:hover {
+            background: var(--soft-pink);
+            color: var(--primary);
+        }
+
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-dark);
+        }
+
+        .comment-edit-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .comment-edit-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+        }
+
+        .comment-edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .comment-edit-actions button {
+            flex: 1;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .comment-save-btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .comment-save-btn:hover {
+            background: var(--secondary);
+        }
+
+        .comment-cancel-btn {
+            background: var(--soft-pink);
+            color: var(--text-dark);
+        }
+
+        .comment-cancel-btn:hover {
+            background: var(--border-color);
+        }
+
+        /* 검색 기능 */
+        .search-container {
+            background: white;
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 40px 12px 16px;
+            border: 2px solid var(--soft-pink);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--text-light);
+        }
+
+        .search-results {
+            margin-top: 16px;
+        }
+
+        .search-result-item {
+            background: var(--cream);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid var(--primary);
+        }
+
+        .search-result-item:hover {
+            background: var(--soft-pink);
+            transform: translateX(4px);
+        }
+
+        .search-result-date {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .search-result-preview {
+            font-size: 14px;
+            color: var(--text-dark);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* 빠른 작성 버튼 */
+        .quick-write-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 101;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .quick-write-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 8px 24px rgba(255, 107, 157, 0.4);
+        }
+
+        .quick-write-btn:active {
+            transform: scale(1.05) rotate(90deg);
+        }
+
+        /* 일기 길이 표시 */
+        .diary-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--soft-pink);
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .diary-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 확인 팝업 모달 */
+        .confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1002;
+            align-items: center;
+            justify-content: center;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .confirm-modal.active {
+            display: flex;
+        }
+
+        .confirm-content {
+            background: white;
+            border-radius: 20px;
+            padding: 32px 24px;
+            max-width: 360px;
+            width: 85%;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .confirm-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+
+        .confirm-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+        }
+
+        .confirm-message {
+            font-size: 15px;
+            color: var(--text-light);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .confirm-btn-cancel {
+            background: var(--soft-pink);
+            color: var(--text-dark);
+        }
+
+        .confirm-btn-cancel:hover {
+            background: var(--border-color);
+        }
+
+        .confirm-btn-delete {
+            background: var(--heart-red);
+            color: white;
+        }
+
+        .confirm-btn-delete:hover {
+            background: #d62839;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .comment-input-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .comment-input-group input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid var(--soft-pink);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .comment-input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .comment-input-group button {
+            padding: 10px 20px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .comment-input-group button:hover {
+            background: var(--secondary);
+        }
+
+        /* 추억 갤러리 */
+        .memories-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .memory-item {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+
+        .memory-item:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .memory-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-header {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .gallery-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .gallery-count {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            background: white;
+            padding: 60px 20px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            color: var(--text-light);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .empty-state-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .empty-state-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .empty-state-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 이미지 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        /* 자동 저장 표시 */
+        .autosave-indicator {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 999;
+        }
+
+        .autosave-indicator.show {
+            opacity: 1;
+        }
+
+        /* 통계 카드 */
+        .stats-card {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 16px;
+            background: var(--cream);
+            border-radius: 12px;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        /* 설정 모달 */
+        .settings-btn {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 101;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .settings-modal.active {
+            display: flex;
+        }
+
+        .settings-content {
+            background: white;
+            border-radius: 24px;
+            padding: 32px 24px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .settings-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .settings-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: var(--soft-pink);
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .settings-close:hover {
+            background: var(--primary);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .settings-section {
+            margin-bottom: 28px;
+        }
+
+        .settings-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        .icon-btn {
+            aspect-ratio: 1;
+            border: 3px solid var(--soft-pink);
+            background: white;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 32px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--primary);
+        }
+
+        .icon-btn.selected {
+            background: var(--soft-pink);
+            border-color: var(--primary);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .icon-btn.selected::after {
+            content: '✓';
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-label {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 12px;
+        }
+
+        .save-settings-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .save-settings-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* 테마 색상 선택기 */
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .theme-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .theme-btn {
+            width: 100%;
+            height: 60px;
+            border: 3px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: visible;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .theme-btn.selected {
+            border-color: var(--text-dark);
+            box-shadow: 0 0 0 2px white, 0 0 0 5px var(--text-dark);
+        }
+
+        .theme-btn.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        /* 테마 버튼 배경색 - 전체를 해당 색상으로 */
+        .theme-pink { background: linear-gradient(135deg, #FF6B9D, #C06C84); }
+        .theme-lavender { background: linear-gradient(135deg, #9B8ED7, #7B68BB); }
+        .theme-mint { background: linear-gradient(135deg, #6DCCB1, #4DB396); }
+        .theme-peach { background: linear-gradient(135deg, #FFB088, #E89A72); }
+        .theme-coral { background: linear-gradient(135deg, #FF9AAD, #E67A8E); }
+        .theme-sky { background: linear-gradient(135deg, #7EC8E3, #5AADC7); }
+        .theme-rose { background: linear-gradient(135deg, #E85D75, #C94B61); }
+        .theme-lilac { background: linear-gradient(135deg, #C997D8, #A87BBF); }
+        .theme-sage { background: linear-gradient(135deg, #A8C5A8, #8FAF8F); }
+        .theme-mauve { background: linear-gradient(135deg, #B88BA7, #9E7690); }
+
+        .theme-label {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        /* 제목 수정 입력 */
+        .title-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--soft-pink);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .title-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+        }
+
+        /* 기념일 관리 */
+        .anniversary-list {
+            margin-bottom: 16px;
+        }
+
+        .anniversary-item {
+            background: var(--cream);
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid var(--primary);
+        }
+
+        .anniversary-icon-display {
+            font-size: 28px;
+            margin-right: 12px;
+        }
+
+        .anniversary-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .anniversary-text {
+            flex: 1;
+        }
+
+        .anniversary-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .anniversary-date {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .anniversary-dday {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .anniversary-delete {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: var(--soft-pink);
+            color: var(--heart-red);
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .anniversary-delete:hover {
+            background: var(--heart-red);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .add-anniversary-btn {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+        }
+
+        .add-anniversary-btn:hover {
+            background: var(--soft-pink);
+            border-style: solid;
+        }
+
+        .add-anniversary-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .anniversary-form {
+            background: var(--soft-pink);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .anniversary-icon-selector {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 12px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .anniversary-icon-btn {
+            aspect-ratio: 1;
+            border: 2px solid var(--border-color);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .anniversary-icon-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--primary);
+        }
+
+        .anniversary-icon-btn.selected {
+            background: var(--soft-pink);
+            border-color: var(--primary);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .anniversary-selected-icon {
+            font-size: 32px;
+            text-align: center;
+            padding: 12px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .anniversary-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .anniversary-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+        }
+
+        .anniversary-form-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .anniversary-save-btn,
+        .anniversary-cancel-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .anniversary-save-btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .anniversary-save-btn:hover {
+            background: var(--secondary);
+        }
+
+        .anniversary-cancel-btn {
+            background: white;
+            color: var(--text-dark);
+        }
+
+        .anniversary-cancel-btn:hover {
+            background: var(--cream);
+        }
+
+        .anniversary-empty {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        /* 달력의 기념일 표시 */
+        .day.anniversary-day {
+            position: relative;
+        }
+
+        .day.anniversary-day .anniversary-icon {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 14px;
+            line-height: 1;
+            filter: none !important;
+            -webkit-filter: none !important;
+            z-index: 10;
+        }
+
+        .anniversary-badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        /* 기념일 알림 카드 */
+        .anniversary-alert {
+            background: linear-gradient(135deg, #FFE5EC, #FFF0F5);
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .anniversary-alert-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .anniversary-alert-content {
+            font-size: 14px;
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+
+        /* 공휴일 표시 */
+        .day.holiday {
+            font-weight: 600;
+        }
+
+        .holiday-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--soft-pink);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .holiday-indicator-icon {
+            font-size: 18px;
+        }
+
+        .holiday-indicator-text {
+            font-size: 13px;
+            color: var(--heart-red);
+            font-weight: 500;
+        }
+
+        /* 사용자 아이콘 표시 */
+        .user-icon {
+            font-size: 20px;
+        }
+
+        .diary-writer-icon {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 반응형 */
+        @media (max-width: 380px) {
+            .mood-selector {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            
+            .mood-btn {
+                font-size: 24px;
+            }
+
+            .icon-selector {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .icon-btn {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 -->
+    <header class="app-header">
+        <h1 class="header-title" id="appTitle">우리의 공간</h1>
+        <p class="header-subtitle">매일의 순간을 함께 기록해요</p>
+        <div class="header-hearts">
+            <span class="heart">💕</span>
+            <span class="heart">💖</span>
+            <span class="heart">💕</span>
+        </div>
+    </header>
+
+    <!-- 설정 버튼 -->
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+
+    <!-- 빠른 일기 작성 버튼 -->
+    <button class="quick-write-btn" onclick="goToWrite()" title="일기 쓰기">✍️</button>
+
+    <!-- 설정 모달 -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2 class="settings-title">설정</h2>
+                <button class="settings-close" onclick="closeSettings()">×</button>
+            </div>
+
+            <!-- 내 아이콘 선택 -->
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    <span>👤</span> 내 아이콘
+                </div>
+                <div class="icon-label">동물을 선택하세요</div>
+                <div class="icon-selector">
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🐶')">🐶</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🐱')">🐱</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🐰')">🐰</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🐻')">🐻</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🦊')">🦊</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🐼')">🐼</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🐨')">🐨</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🐯')">🐯</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🦁')">🦁</button>
+                    <button class="icon-btn" onclick="selectMyIcon(this, '🐸')">🐸</button>
+                </div>
+            </div>
+
+            <!-- 파트너 아이콘 선택 -->
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    <span>💕</span> 파트너 아이콘
+                </div>
+                <div class="icon-label">파트너의 동물을 선택하세요</div>
+                <div class="icon-selector">
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐶')">🐶</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐱')">🐱</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐰')">🐰</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐻')">🐻</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🦊')">🦊</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐼')">🐼</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐨')">🐨</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐯')">🐯</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🦁')">🦁</button>
+                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐸')">🐸</button>
+                </div>
+            </div>
+
+            <!-- 테마 색상 선택 -->
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    <span>🎨</span> 테마 색상
+                </div>
+                <div class="icon-label">원하는 색상을 선택하세요</div>
+                <div class="theme-selector">
+                    <div class="theme-item">
+                        <button class="theme-btn theme-pink" onclick="selectTheme(this, 'pink')"></button>
+                        <div class="theme-label">핑크</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-lavender" onclick="selectTheme(this, 'lavender')"></button>
+                        <div class="theme-label">라벤더</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-mint" onclick="selectTheme(this, 'mint')"></button>
+                        <div class="theme-label">민트</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-peach" onclick="selectTheme(this, 'peach')"></button>
+                        <div class="theme-label">피치</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-coral" onclick="selectTheme(this, 'coral')"></button>
+                        <div class="theme-label">코랄</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-sky" onclick="selectTheme(this, 'sky')"></button>
+                        <div class="theme-label">스카이</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-rose" onclick="selectTheme(this, 'rose')"></button>
+                        <div class="theme-label">로즈</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-lilac" onclick="selectTheme(this, 'lilac')"></button>
+                        <div class="theme-label">라일락</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-sage" onclick="selectTheme(this, 'sage')"></button>
+                        <div class="theme-label">세이지</div>
+                    </div>
+                    <div class="theme-item">
+                        <button class="theme-btn theme-mauve" onclick="selectTheme(this, 'mauve')"></button>
+                        <div class="theme-label">모브</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 앱 제목 변경 -->
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    <span>✏️</span> 앱 제목
+                </div>
+                <div class="icon-label">상단에 표시될 제목을 입력하세요 (최대 20자)</div>
+                <input type="text" class="title-input" id="appTitleInput" placeholder="우리의 공간" maxlength="20">
+            </div>
+
+            <!-- 기념일 관리 -->
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    <span>🎉</span> 우리의 기념일
+                </div>
+                <div class="icon-label">특별한 날을 추가하세요 (최대 5개)</div>
+                
+                <div id="anniversaryList" class="anniversary-list"></div>
+                
+                <button class="add-anniversary-btn" onclick="showAddAnniversaryForm()" id="addAnniversaryBtn">
+                    ➕ 기념일 추가하기
+                </button>
+                
+                <div class="anniversary-form" id="anniversaryForm" style="display: none;">
+                    <div class="anniversary-selected-icon" id="selectedAnniversaryIcon">🎉</div>
+                    <div class="anniversary-icon-selector">
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💑')">💑</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💕')">💕</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💖')">💖</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💝')">💝</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💗')">💗</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💓')">💓</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💞')">💞</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💘')">💘</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎂')">🎂</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎉')">🎉</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎊')">🎊</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎈')">🎈</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎁')">🎁</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎀')">🎀</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🌹')">🌹</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🌺')">🌺</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🌷')">🌷</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🌸')">🌸</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💐')">💐</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🍰')">🍰</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🧁')">🧁</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🍫')">🍫</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🍬')">🍬</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🍭')">🍭</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '⛪')">⛪</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '💒')">💒</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🏠')">🏠</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎄')">🎄</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎃')">🎃</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '🎅')">🎅</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '⭐')">⭐</button>
+                        <button type="button" class="anniversary-icon-btn" onclick="selectAnniversaryIcon(this, '✨')">✨</button>
+                    </div>
+                    <input type="text" class="anniversary-input" id="anniversaryName" placeholder="기념일 이름 (예: 우리의 첫 만남)" maxlength="20">
+                    <input type="date" class="anniversary-input" id="anniversaryDate">
+                    <div class="anniversary-form-actions">
+                        <button class="anniversary-save-btn" onclick="saveAnniversary()">저장</button>
+                        <button class="anniversary-cancel-btn" onclick="cancelAnniversaryForm()">취소</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="save-settings-btn" onclick="saveSettings()">저장하기</button>
+        </div>
+    </div>
+
+    <!-- 메인 컨테이너 -->
+    <div class="container">
+        <!-- 탭 네비게이션 -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('calendar', this)">
+                <span class="tab-icon">📅</span>
+                달력
+            </button>
+            <button class="tab-btn" onclick="switchTab('write', this)">
+                <span class="tab-icon">✍️</span>
+                작성
+            </button>
+            <button class="tab-btn" onclick="switchTab('memories', this)">
+                <span class="tab-icon">📸</span>
+                추억
+            </button>
+        </nav>
+
+        <!-- 달력 섹션 -->
+        <section id="calendar" class="section active">
+            <!-- 다가오는 기념일 알림 -->
+            <div id="upcomingAnniversary"></div>
+
+            <!-- 검색 기능 -->
+            <div class="search-container">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="searchInput"
+                        placeholder="일기 내용 검색..."
+                        oninput="searchDiaries()"
+                    >
+                    <span class="search-icon">🔍</span>
+                </div>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+
+            <!-- 통계 카드 -->
+            <div class="stats-card">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalDays">0</div>
+                        <div class="stat-label">함께한 날</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalEntries">0</div>
+                        <div class="stat-label">총 일기 수</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 달력 -->
+            <div class="calendar-card">
+                <div class="calendar-header">
+                    <h3 class="calendar-month" id="currentMonth"></h3>
+                    <div class="calendar-nav">
+                        <button onclick="prevMonth()">◀</button>
+                        <button onclick="nextMonth()">▶</button>
+                    </div>
+                </div>
+                <div class="weekdays">
+                    <div class="weekday">일</div>
+                    <div class="weekday">월</div>
+                    <div class="weekday">화</div>
+                    <div class="weekday">수</div>
+                    <div class="weekday">목</div>
+                    <div class="weekday">금</div>
+                    <div class="weekday">토</div>
+                </div>
+                <div class="days" id="calendarDays"></div>
+            </div>
+
+            <!-- 선택된 날짜의 일기 -->
+            <div id="selectedDayEntries"></div>
+        </section>
+
+        <!-- 일기 작성 섹션 -->
+        <section id="write" class="section">
+            <div class="diary-form">
+                <!-- 날짜 선택 -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <span class="section-icon">📆</span>
+                        날짜
+                    </div>
+                    <input type="date" id="entryDate" class="date-input">
+                </div>
+
+                <!-- 기분 선택 -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <span class="section-icon">😊</span>
+                        오늘의 기분
+                    </div>
+                    <div class="mood-selector">
+                        <button class="mood-btn" onclick="selectMood(this, '😊')">😊</button>
+                        <button class="mood-btn" onclick="selectMood(this, '😍')">😍</button>
+                        <button class="mood-btn" onclick="selectMood(this, '🥰')">🥰</button>
+                        <button class="mood-btn" onclick="selectMood(this, '😢')">😢</button>
+                        <button class="mood-btn" onclick="selectMood(this, '😤')">😤</button>
+                        <button class="mood-btn" onclick="selectMood(this, '🤗')">🤗</button>
+                        <button class="mood-btn" onclick="selectMood(this, '🤔')">🤔</button>
+                        <button class="mood-btn" onclick="selectMood(this, '😴')">😴</button>
+                        <button class="mood-btn" onclick="selectMood(this, '🎉')">🎉</button>
+                        <button class="mood-btn" onclick="selectMood(this, '💪')">💪</button>
+                    </div>
+                </div>
+
+                <!-- 일기 내용 -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <span class="section-icon">📝</span>
+                        오늘의 일기
+                    </div>
+                    <textarea 
+                        id="diaryContent" 
+                        class="diary-textarea" 
+                        placeholder="오늘 하루는 어땠나요?&#10;특별했던 순간을 기록해보세요..."
+                        maxlength="1000"
+                        oninput="updateCharCount()"
+                    ></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span> / 1000
+                    </div>
+                </div>
+
+                <!-- 사진 업로드 -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <span class="section-icon">📷</span>
+                        사진 (최대 3장)
+                    </div>
+                    <div class="photo-upload-area" onclick="document.getElementById('photoInput').click()">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">사진을 선택하거나 드래그하세요</div>
+                    </div>
+                    <input type="file" id="photoInput" accept="image/*" multiple>
+                    <div class="photo-preview" id="photoPreview"></div>
+                </div>
+
+                <!-- 저장 버튼 -->
+                <button class="save-btn" onclick="saveDiary()">
+                    💕 저장하기
+                </button>
+            </div>
+        </section>
+
+        <!-- 추억 갤러리 섹션 -->
+        <section id="memories" class="section">
+            <div class="gallery-header">
+                <h2 class="gallery-title">우리의 추억 📸</h2>
+                <p class="gallery-count" id="galleryCount">0개의 사진</p>
+            </div>
+            <div class="memories-grid" id="memoriesGrid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎞️</div>
+                    <p>아직 사진이 없습니다.<br>일기에 사진을 첨부해보세요!</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 이미지 모달 -->
+    <div class="modal" id="imageModal" onclick="closeModal()">
+        <button class="modal-close">×</button>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <!-- 자동 저장 표시 -->
+    <div class="autosave-indicator" id="autosaveIndicator">
+        ✓ 자동 저장됨
+    </div>
+
+    <!-- 확인 팝업 모달 -->
+    <div class="confirm-modal" id="confirmModal" onclick="closeConfirmModalOnOutside(event)">
+        <div class="confirm-content" onclick="event.stopPropagation()">
+            <div class="confirm-icon" id="confirmIcon">⚠️</div>
+            <h3 class="confirm-title" id="confirmTitle">정말 삭제하시겠습니까?</h3>
+            <p class="confirm-message" id="confirmMessage">이 작업은 되돌릴 수 없습니다.</p>
+            <div class="confirm-actions">
+                <button class="confirm-btn confirm-btn-cancel" onclick="closeConfirmModal()">취소</button>
+                <button class="confirm-btn confirm-btn-delete" id="confirmDeleteBtn">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let currentDate = new Date();
+        let selectedDate = new Date().toISOString().split('T')[0]; // 현재 선택된 날짜
+        let entries = JSON.parse(localStorage.getItem('diaryEntries')) || {};
+        let partnerEntries = JSON.parse(localStorage.getItem('partnerEntries')) || {};
+        let uploadedPhotos = [];
+        let selectedMoodValue = '';
+        let autosaveTimer = null;
+        let startDate = localStorage.getItem('coupleStartDate') || new Date().toISOString().split('T')[0];
+        let myIcon = localStorage.getItem('myIcon') || '🐶';
+        let partnerIcon = localStorage.getItem('partnerIcon') || '🐱';
+        let confirmCallback = null; // 확인 모달 콜백
+        let anniversaries = JSON.parse(localStorage.getItem('anniversaries')) || [];
+        let selectedAnniversaryIcon = '🎉'; // 기념일 아이콘
+        let currentTheme = localStorage.getItem('appTheme') || 'pink';
+        let appTitle = localStorage.getItem('appTitle') || '우리의 공간';
+
+        // 확인 모달 관련 함수
+        function showConfirmModal(title, message, callback, icon = '⚠️') {
+            document.getElementById('confirmIcon').textContent = icon;
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmModal').classList.add('active');
+            
+            confirmCallback = callback;
+            
+            // 삭제 버튼에 이벤트 리스너 추가
+            const deleteBtn = document.getElementById('confirmDeleteBtn');
+            const newDeleteBtn = deleteBtn.cloneNode(true);
+            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+            
+            newDeleteBtn.addEventListener('click', () => {
+                if (confirmCallback) {
+                    confirmCallback();
+                }
+                closeConfirmModal();
+            });
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+            confirmCallback = null;
+        }
+
+        function closeConfirmModalOnOutside(event) {
+            if (event.target.id === 'confirmModal') {
+                closeConfirmModal();
+            }
+        }
+
+        // 2025-2026 한국 공휴일
+        const holidays = {
+            '2025-01-01': '신정',
+            '2025-01-28': '설날연휴',
+            '2025-01-29': '설날',
+            '2025-01-30': '설날연휴',
+            '2025-03-01': '삼일절',
+            '2025-03-03': '대체공휴일',
+            '2025-05-05': '어린이날',
+            '2025-05-06': '대체공휴일',
+            '2025-06-06': '현충일',
+            '2025-08-15': '광복절',
+            '2025-10-03': '개천절',
+            '2025-10-05': '추석연휴',
+            '2025-10-06': '추석',
+            '2025-10-07': '추석연휴',
+            '2025-10-08': '대체공휴일',
+            '2025-10-09': '한글날',
+            '2025-12-25': '크리스마스',
+            '2026-01-01': '신정',
+            '2026-02-16': '설날연휴',
+            '2026-02-17': '설날',
+            '2026-02-18': '설날연휴',
+            '2026-03-01': '삼일절',
+            '2026-05-05': '어린이날',
+            '2026-05-25': '석가탄신일',
+            '2026-06-06': '현충일',
+            '2026-08-15': '광복절',
+            '2026-09-24': '추석연휴',
+            '2026-09-25': '추석',
+            '2026-09-26': '추석연휴',
+            '2026-10-03': '개천절',
+            '2026-10-09': '한글날',
+            '2026-12-25': '크리스마스'
+        };
+
+        // 테마 및 제목 관련 함수
+        function selectTheme(btn, theme) {
+            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            currentTheme = theme;
+            
+            // 즉시 테마 적용
+            applyTheme(theme);
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('appTheme', theme);
+        }
+
+        function updateAppTitle(title) {
+            document.getElementById('appTitle').textContent = title;
+            localStorage.setItem('appTitle', title);
+        }
+
+        // 설정 관련 함수
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+            
+            // 현재 선택된 아이콘 표시
+            document.querySelectorAll('.icon-selector').forEach((selector, index) => {
+                const buttons = selector.querySelectorAll('.icon-btn');
+                buttons.forEach(btn => {
+                    btn.classList.remove('selected');
+                    const icon = btn.textContent;
+                    if (index === 0 && icon === myIcon) {
+                        btn.classList.add('selected');
+                    } else if (index === 1 && icon === partnerIcon) {
+                        btn.classList.add('selected');
+                    }
+                });
+            });
+            
+            // 현재 테마 표시
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.onclick.toString().includes(`'${currentTheme}'`)) {
+                    btn.classList.add('selected');
+                }
+            });
+            
+            // 현재 제목 표시
+            document.getElementById('appTitleInput').value = appTitle;
+            
+            // 기념일 리스트 렌더링
+            renderAnniversaryList();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function selectMyIcon(btn, icon) {
+            const selector = btn.parentElement;
+            selector.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            myIcon = icon;
+        }
+
+        function selectPartnerIcon(btn, icon) {
+            const selector = btn.parentElement;
+            selector.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            partnerIcon = icon;
+        }
+
+        function saveSettings() {
+            localStorage.setItem('myIcon', myIcon);
+            localStorage.setItem('partnerIcon', partnerIcon);
+            
+            // 테마는 이미 즉시 적용되었으므로 저장만
+            localStorage.setItem('appTheme', currentTheme);
+            
+            // 제목 업데이트
+            const newTitle = document.getElementById('appTitleInput').value.trim() || '우리의 공간';
+            appTitle = newTitle;
+            updateAppTitle(newTitle);
+            
+            alert('✅ 설정이 저장되었습니다!');
+            closeSettings();
+            
+            // 화면 업데이트
+            renderCalendar();
+            updateUpcomingAnniversary();
+            
+            // 현재 표시된 일기 새로고침
+            displayDateEntries(selectedDate);
+        }
+
+        // 초기화
+        function init() {
+            // 테마 적용
+            applyTheme(currentTheme);
+            
+            // 제목 적용
+            updateAppTitle(appTitle);
+            
+            // 오늘 날짜 설정
+            const today = new Date().toISOString().split('T')[0];
+            selectedDate = today; // 전역 변수에 설정
+            document.getElementById('entryDate').value = today;
+            
+            // 달력 렌더링
+            renderCalendar();
+            
+            // 통계 업데이트
+            updateStats();
+            
+            // 추억 갤러리 업데이트
+            updateMemories();
+            
+            // 다가오는 기념일 업데이트
+            updateUpcomingAnniversary();
+            
+            // 오늘 날짜 자동 표시
+            displayDateEntries(today);
+            
+            // 사진 드래그 앤 드롭 설정
+            setupDragAndDrop();
+            
+            // 자동 저장 설정
+            setupAutosave();
+            
+            // 데모 데이터 (처음 방문시)
+            if (Object.keys(entries).length === 0) {
+                addDemoData();
+            }
+        }
+
+        // 데모 데이터 추가
+        function addDemoData() {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const todayStr = today.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            // 오늘 날짜 일기
+            const todayTime = new Date();
+            todayTime.setHours(14, 30, 0);
+            
+            entries[todayStr] = {
+                content: "오늘 함께 산책하면서 정말 행복했어. 당신과 함께하는 모든 순간이 소중해요 💕",
+                mood: "😍",
+                photos: [],
+                createdAt: todayTime.toISOString()
+            };
+            
+            // 파트너 일기
+            const partnerTime = new Date();
+            partnerTime.setHours(20, 15, 0);
+            
+            partnerEntries[todayStr] = {
+                content: "오늘 하루도 함께 있어서 정말 행복했어! 매일매일이 기념일 같아 🥰",
+                mood: "🥰",
+                photos: [],
+                createdAt: partnerTime.toISOString(),
+                comments: [
+                    { 
+                        author: "나", 
+                        text: "나도 정말 그래! 매일 함께해줘서 고마워 💕",
+                        createdAt: new Date().toISOString()
+                    }
+                ],
+                liked: false
+            };
+            
+            localStorage.setItem('diaryEntries', JSON.stringify(entries));
+            localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+            
+            renderCalendar();
+        }
+
+        // 통계 업데이트
+        function updateStats() {
+            const start = new Date(startDate);
+            const today = new Date();
+            const diffTime = Math.abs(today - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const totalEntries = Object.keys(entries).length + Object.keys(partnerEntries).length;
+            
+            document.getElementById('totalDays').textContent = diffDays;
+            document.getElementById('totalEntries').textContent = totalEntries;
+        }
+
+        // 달력 렌더링
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // 월 표시
+            document.getElementById('currentMonth').textContent = 
+                `${year}년 ${month + 1}월`;
+            
+            // 첫 날과 마지막 날
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            let html = '';
+            
+            // 이전 달 빈 칸
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                html += '<div class="day other-month"></div>';
+            }
+            
+            // 현재 달 날짜
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === todayStr;
+                const isSelected = dateStr === selectedDate;
+                const hasMyEntry = entries[dateStr];
+                const hasPartnerEntry = partnerEntries[dateStr];
+                const hasBoth = hasMyEntry && hasPartnerEntry;
+                const isHoliday = holidays[dateStr];
+                const anniversary = anniversaries.find(a => a.date === dateStr);
+                const isAnniversary = !!anniversary;
+                
+                let classes = 'day';
+                if (isToday) classes += ' today';
+                if (isSelected) classes += ' selected';
+                if (hasBoth) classes += ' has-both';
+                else if (hasMyEntry || hasPartnerEntry) classes += ' has-entry';
+                if (isHoliday) classes += ' holiday';
+                if (isAnniversary) classes += ' anniversary-day';
+                
+                const holidayAttr = isHoliday ? `data-holiday="${isHoliday}"` : '';
+                
+                // 아이콘 표시
+                let iconsHtml = '';
+                if (hasBoth) {
+                    iconsHtml = `<div class="day-icons">${myIcon}${partnerIcon}</div>`;
+                } else if (hasMyEntry) {
+                    iconsHtml = `<div class="day-icons">${myIcon}</div>`;
+                } else if (hasPartnerEntry) {
+                    iconsHtml = `<div class="day-icons">${partnerIcon}</div>`;
+                }
+                
+                // 기념일 아이콘
+                let anniversaryIconHtml = '';
+                if (isAnniversary) {
+                    const icon = anniversary.icon || '🎉';
+                    anniversaryIconHtml = `<span class="anniversary-icon">${icon}</span>`;
+                }
+                
+                html += `<button class="${classes}" ${holidayAttr} onclick="selectDate('${dateStr}')">
+                    ${anniversaryIconHtml}
+                    <span class="day-number">${day}</span>${iconsHtml}
+                </button>`;
+            }
+            
+            // 다음 달 빈 칸
+            const totalCells = Math.ceil((startingDayOfWeek + daysInMonth) / 7) * 7;
+            for (let i = daysInMonth + startingDayOfWeek; i < totalCells; i++) {
+                html += '<div class="day other-month"></div>';
+            }
+            
+            document.getElementById('calendarDays').innerHTML = html;
+        }
+
+        function prevMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function selectDate(dateStr) {
+            selectedDate = dateStr;
+            renderCalendar();
+            displayDateEntries(dateStr);
+        }
+
+        // 기념일 관련 함수
+        function selectAnniversaryIcon(btn, icon) {
+            document.querySelectorAll('.anniversary-icon-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedAnniversaryIcon = icon;
+            document.getElementById('selectedAnniversaryIcon').textContent = icon;
+        }
+
+        function renderAnniversaryList() {
+            const container = document.getElementById('anniversaryList');
+            const addBtn = document.getElementById('addAnniversaryBtn');
+            
+            if (anniversaries.length === 0) {
+                container.innerHTML = '<div class="anniversary-empty">아직 등록된 기념일이 없습니다.</div>';
+                addBtn.disabled = false;
+                return;
+            }
+            
+            // 날짜순 정렬
+            anniversaries.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            let html = '';
+            anniversaries.forEach((anni, index) => {
+                const dday = calculateDday(anni.date);
+                const icon = anni.icon || '🎉';
+                html += `
+                    <div class="anniversary-item">
+                        <div class="anniversary-info">
+                            <div class="anniversary-icon-display">${icon}</div>
+                            <div class="anniversary-text">
+                                <div class="anniversary-name">${anni.name}</div>
+                                <div class="anniversary-date">${anni.date}</div>
+                                <div class="anniversary-dday">${dday}</div>
+                            </div>
+                        </div>
+                        <button class="anniversary-delete" onclick="deleteAnniversary(${index})">×</button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            addBtn.disabled = anniversaries.length >= 5;
+        }
+
+        function calculateDday(dateStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const target = new Date(dateStr);
+            target.setHours(0, 0, 0, 0);
+            
+            const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+            
+            if (diff === 0) return '오늘이 바로 그날! 🎉';
+            if (diff > 0) return `D-${diff}`;
+            
+            const daysPassed = Math.abs(diff);
+            return `${daysPassed}일째`;
+        }
+
+        function showAddAnniversaryForm() {
+            document.getElementById('anniversaryForm').style.display = 'block';
+            document.getElementById('addAnniversaryBtn').style.display = 'none';
+            document.getElementById('anniversaryName').focus();
+        }
+
+        function cancelAnniversaryForm() {
+            document.getElementById('anniversaryForm').style.display = 'none';
+            document.getElementById('addAnniversaryBtn').style.display = 'block';
+            document.getElementById('anniversaryName').value = '';
+            document.getElementById('anniversaryDate').value = '';
+            selectedAnniversaryIcon = '🎉';
+            document.getElementById('selectedAnniversaryIcon').textContent = '🎉';
+            document.querySelectorAll('.anniversary-icon-btn').forEach(b => b.classList.remove('selected'));
+        }
+
+        function saveAnniversary() {
+            const name = document.getElementById('anniversaryName').value.trim();
+            const date = document.getElementById('anniversaryDate').value;
+            
+            if (!name) {
+                alert('기념일 이름을 입력해주세요!');
+                return;
+            }
+            
+            if (!date) {
+                alert('날짜를 선택해주세요!');
+                return;
+            }
+            
+            anniversaries.push({ 
+                name, 
+                date, 
+                icon: selectedAnniversaryIcon 
+            });
+            localStorage.setItem('anniversaries', JSON.stringify(anniversaries));
+            
+            renderAnniversaryList();
+            cancelAnniversaryForm();
+            updateUpcomingAnniversary();
+            renderCalendar();
+        }
+
+        function deleteAnniversary(index) {
+            showConfirmModal(
+                '기념일을 삭제하시겠습니까?',
+                `"${anniversaries[index].name}"을(를) 삭제합니다.`,
+                () => {
+                    anniversaries.splice(index, 1);
+                    localStorage.setItem('anniversaries', JSON.stringify(anniversaries));
+                    renderAnniversaryList();
+                    renderCalendar();
+                    updateUpcomingAnniversary();
+                },
+                '🎉'
+            );
+        }
+
+        function updateUpcomingAnniversary() {
+            const container = document.getElementById('upcomingAnniversary');
+            
+            if (anniversaries.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // 오늘 또는 가장 가까운 미래 기념일 찾기
+            let nearest = null;
+            let minDiff = Infinity;
+            
+            anniversaries.forEach(anni => {
+                const target = new Date(anni.date);
+                target.setHours(0, 0, 0, 0);
+                const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+                
+                if (diff >= 0 && diff < minDiff) {
+                    minDiff = diff;
+                    nearest = { ...anni, diff };
+                }
+            });
+            
+            if (!nearest || nearest.diff > 30) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            const dday = calculateDday(nearest.date);
+            const icon = nearest.icon || '🎉';
+            let message = '';
+            
+            if (nearest.diff === 0) {
+                message = `오늘은 <strong>${nearest.name}</strong>입니다! ${icon}`;
+            } else if (nearest.diff <= 7) {
+                message = `<strong>${nearest.name}</strong>이(가) ${nearest.diff}일 남았어요! ${dday}`;
+            } else {
+                message = `다가오는 기념일: <strong>${nearest.name}</strong> ${dday}`;
+            }
+            
+            container.innerHTML = `
+                <div class="anniversary-alert">
+                    <div class="anniversary-alert-title">
+                        <span>${icon}</span>
+                        <span>다가오는 기념일</span>
+                    </div>
+                    <div class="anniversary-alert-content">${message}</div>
+                </div>
+            `;
+        }
+
+        // 선택된 날짜의 일기 표시
+        function displayDateEntries(dateStr) {
+            const myEntry = entries[dateStr];
+            const partnerEntry = partnerEntries[dateStr];
+            const anniversary = anniversaries.find(a => a.date === dateStr);
+            let html = '';
+            
+            // 기념일 배지
+            if (anniversary) {
+                const icon = anniversary.icon || '🎉';
+                html += `
+                    <div class="anniversary-alert">
+                        <div class="anniversary-alert-title">
+                            <span>${icon}</span>
+                            <span>${anniversary.name}</span>
+                        </div>
+                        <div class="anniversary-alert-content">
+                            ${calculateDday(anniversary.date)}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 내 일기
+            if (myEntry) {
+                html += renderDiaryCard(dateStr, myEntry, 'my');
+            }
+            
+            // 파트너 일기
+            if (partnerEntry) {
+                html += renderDiaryCard(dateStr, partnerEntry, 'partner');
+            }
+            
+            if (!myEntry && !partnerEntry) {
+                html += `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>이 날짜에 기록한 일기가 없습니다.<br>새로운 일기를 작성해보세요!</p>
+                        <button class="empty-state-btn" onclick="goToWriteWithDate('${dateStr}')">
+                            ✍️ 일기 작성하기
+                        </button>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('selectedDayEntries').innerHTML = html;
+            
+            // 댓글 버튼 이벤트 리스너 설정
+            setupCommentEventListeners();
+        }
+
+        // 일기 카드 렌더링
+        function renderDiaryCard(dateStr, entry, type) {
+            const isMyEntry = type === 'my';
+            const cardClass = isMyEntry ? '' : 'partner';
+            const writerClass = isMyEntry ? '' : 'partner-writer';
+            const writerIcon = isMyEntry ? myIcon : partnerIcon;
+            const writerName = isMyEntry ? '나' : '파트너';
+            
+            let html = `
+                <div class="diary-card ${cardClass}">
+                    <div class="diary-card-header">
+                        <div>
+                            <div class="diary-writer ${writerClass}">
+                                <span class="diary-writer-icon">
+                                    <span class="user-icon">${writerIcon}</span>
+                                    <span>${writerName}</span>
+                                </span>
+                            </div>
+                            <div class="diary-date">${dateStr}</div>
+                        </div>
+                        <div class="diary-mood">${entry.mood || '😊'}</div>
+                    </div>
+                    <div class="diary-content">${entry.content}</div>
+            `;
+            
+            // 사진
+            if (entry.photos && entry.photos.length > 0) {
+                html += '<div class="diary-images">';
+                entry.photos.forEach(photo => {
+                    html += `<img src="${photo}" class="diary-image" alt="사진" onclick="openModal('${photo}')">`;
+                });
+                html += '</div>';
+            }
+
+            // 메타 정보 (글자 수, 사진 수)
+            const charCount = entry.content.length;
+            const photoCount = entry.photos ? entry.photos.length : 0;
+            html += `
+                <div class="diary-meta">
+                    <span class="diary-meta-item">📝 ${charCount}자</span>
+                    ${photoCount > 0 ? `<span class="diary-meta-item">📷 ${photoCount}장</span>` : ''}
+                    <span class="diary-meta-item">⏰ ${new Date(entry.createdAt).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})}</span>
+                </div>
+            `;
+            
+            // 액션 버튼
+            if (isMyEntry) {
+                html += `
+                    <div class="diary-actions">
+                        <button class="action-btn" onclick="editEntry('${dateStr}')">✏️ 수정</button>
+                        <button class="action-btn" onclick="deleteEntry('${dateStr}')">🗑️ 삭제</button>
+                    </div>
+                `;
+            } else {
+                const likedClass = entry.liked ? 'liked' : '';
+                const commentCount = entry.comments ? entry.comments.length : 0;
+                html += `
+                    <div class="diary-actions">
+                        <button class="action-btn ${likedClass}" onclick="toggleLike('${dateStr}')">
+                            ${entry.liked ? '❤️' : '🤍'} 좋아요
+                        </button>
+                        <button class="action-btn" onclick="toggleCommentInput('${dateStr}')">💬 댓글 ${commentCount > 0 ? `(${commentCount})` : ''}</button>
+                    </div>
+                `;
+                
+                // 댓글 섹션
+                html += `<div class="comments-section" id="comments-${dateStr}">`;
+                if (entry.comments && entry.comments.length > 0) {
+                    entry.comments.forEach((comment, index) => {
+                        html += `
+                            <div class="comment" id="comment-${dateStr}-${index}">
+                                <div class="comment-header">
+                                    <div class="comment-author">${myIcon} ${comment.author}</div>
+                                    <div class="comment-actions">
+                                        <button class="comment-action-btn" data-action="edit" data-date="${dateStr}" data-index="${index}">수정</button>
+                                        <button class="comment-action-btn" data-action="delete" data-date="${dateStr}" data-index="${index}">삭제</button>
+                                    </div>
+                                </div>
+                                <div class="comment-text">${comment.text}</div>
+                            </div>
+                        `;
+                    });
+                }
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        // 댓글 버튼 이벤트 리스너 설정
+        function setupCommentEventListeners() {
+            document.querySelectorAll('.comment-action-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const action = this.dataset.action;
+                    const dateStr = this.dataset.date;
+                    const index = parseInt(this.dataset.index);
+                    
+                    if (action === 'edit') {
+                        editComment(dateStr, index);
+                    } else if (action === 'delete') {
+                        deleteComment(dateStr, index);
+                    }
+                });
+            });
+        }
+
+        // 기분 선택
+        function selectMood(btn, mood) {
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedMoodValue = mood;
+        }
+
+        // 글자 수 카운트
+        function updateCharCount() {
+            const content = document.getElementById('diaryContent').value;
+            document.getElementById('charCount').textContent = content.length;
+        }
+
+        // 자동 저장 설정
+        function setupAutosave() {
+            const textarea = document.getElementById('diaryContent');
+            textarea.addEventListener('input', () => {
+                clearTimeout(autosaveTimer);
+                autosaveTimer = setTimeout(() => {
+                    const dateStr = document.getElementById('entryDate').value;
+                    const content = textarea.value.trim();
+                    if (content) {
+                        const draft = {
+                            content,
+                            mood: selectedMoodValue || '😊',
+                            photos: uploadedPhotos,
+                            isDraft: true
+                        };
+                        localStorage.setItem(`draft-${dateStr}`, JSON.stringify(draft));
+                        showAutosaveIndicator();
+                    }
+                }, 2000);
+            });
+        }
+
+        function showAutosaveIndicator() {
+            const indicator = document.getElementById('autosaveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // 일기 저장
+        function saveDiary() {
+            const dateStr = document.getElementById('entryDate').value;
+            const content = document.getElementById('diaryContent').value.trim();
+            
+            if (!content) {
+                alert('일기를 작성해주세요!');
+                return;
+            }
+            
+            if (!selectedMoodValue) {
+                alert('오늘의 기분을 선택해주세요!');
+                return;
+            }
+            
+            const entry = {
+                content,
+                mood: selectedMoodValue,
+                photos: uploadedPhotos,
+                createdAt: new Date().toISOString()
+            };
+            
+            entries[dateStr] = entry;
+            localStorage.setItem('diaryEntries', JSON.stringify(entries));
+            localStorage.removeItem(`draft-${dateStr}`);
+            
+            // 성공 메시지
+            alert('💕 일기가 저장되었습니다!');
+            
+            // 폼 초기화
+            resetForm();
+            
+            // 화면 업데이트
+            selectedDate = dateStr; // 저장한 날짜를 선택된 날짜로 설정
+            renderCalendar();
+            updateStats();
+            updateMemories();
+            switchTab('calendar', document.querySelector('.tab-btn'));
+            displayDateEntries(dateStr);
+        }
+
+        function resetForm() {
+            document.getElementById('diaryContent').value = '';
+            document.getElementById('photoPreview').innerHTML = '';
+            document.getElementById('photoInput').value = '';
+            document.getElementById('charCount').textContent = '0';
+            uploadedPhotos = [];
+            selectedMoodValue = '';
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+        }
+
+        // 일기 수정
+        function editEntry(dateStr) {
+            const entry = entries[dateStr];
+            switchTab('write', document.querySelectorAll('.tab-btn')[1]);
+            
+            document.getElementById('entryDate').value = dateStr;
+            document.getElementById('diaryContent').value = entry.content;
+            updateCharCount();
+            
+            // 기분 설정
+            document.querySelectorAll('.mood-btn').forEach(btn => {
+                if (btn.textContent === entry.mood) {
+                    selectMood(btn, entry.mood);
+                }
+            });
+            
+            // 사진 설정
+            uploadedPhotos = entry.photos || [];
+            displayPhotoPreviews();
+        }
+
+        // 일기 삭제
+        function deleteEntry(dateStr) {
+            showConfirmModal(
+                '일기를 삭제하시겠습니까?',
+                '삭제된 일기는 복구할 수 없습니다.',
+                () => {
+                    delete entries[dateStr];
+                    localStorage.setItem('diaryEntries', JSON.stringify(entries));
+                    renderCalendar();
+                    updateStats();
+                    updateMemories();
+                    displayDateEntries(dateStr);
+                },
+                '🗑️'
+            );
+        }
+
+        // 좋아요 토글
+        function toggleLike(dateStr) {
+            if (partnerEntries[dateStr]) {
+                partnerEntries[dateStr].liked = !partnerEntries[dateStr].liked;
+                localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                displayDateEntries(dateStr);
+            }
+        }
+
+        // 댓글 입력창 토글
+        function toggleCommentInput(dateStr) {
+            const commentsSection = document.getElementById(`comments-${dateStr}`);
+            const existingInput = commentsSection.querySelector('.comment-input-group');
+            
+            if (existingInput) {
+                existingInput.remove();
+            } else {
+                const inputGroup = document.createElement('div');
+                inputGroup.className = 'comment-input-group';
+                inputGroup.innerHTML = `
+                    <input type="text" placeholder="댓글을 입력하세요..." id="comment-input-${dateStr}">
+                    <button onclick="addComment('${dateStr}')">등록</button>
+                `;
+                commentsSection.appendChild(inputGroup);
+                document.getElementById(`comment-input-${dateStr}`).focus();
+            }
+        }
+
+        // 댓글 추가
+        function addComment(dateStr) {
+            const input = document.getElementById(`comment-input-${dateStr}`);
+            const text = input.value.trim();
+            
+            if (text) {
+                if (!partnerEntries[dateStr].comments) {
+                    partnerEntries[dateStr].comments = [];
+                }
+                
+                partnerEntries[dateStr].comments.push({
+                    author: '나',
+                    text: text
+                });
+                
+                localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                displayDateEntries(dateStr);
+            }
+        }
+
+        // 사진 업로드 처리
+        document.getElementById('photoInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files).slice(0, 3);
+            uploadedPhotos = [];
+            
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    uploadedPhotos.push(event.target.result);
+                    displayPhotoPreviews();
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        function displayPhotoPreviews() {
+            const preview = document.getElementById('photoPreview');
+            preview.innerHTML = '';
+            
+            uploadedPhotos.forEach((photo, index) => {
+                const item = document.createElement('div');
+                item.className = 'preview-item';
+                item.innerHTML = `
+                    <img src="${photo}" alt="미리보기">
+                    <button class="preview-remove" onclick="removePhoto(${index})">×</button>
+                `;
+                preview.appendChild(item);
+            });
+        }
+
+        function removePhoto(index) {
+            uploadedPhotos.splice(index, 1);
+            displayPhotoPreviews();
+        }
+
+        // 드래그 앤 드롭 설정
+        function setupDragAndDrop() {
+            const uploadArea = document.querySelector('.photo-upload-area');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.classList.remove('drag-over');
+                });
+            });
+            
+            uploadArea.addEventListener('drop', handleDrop);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = Array.from(dt.files).slice(0, 3);
+                
+                uploadedPhotos = [];
+                files.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            uploadedPhotos.push(event.target.result);
+                            displayPhotoPreviews();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        }
+
+        // 추억 갤러리 업데이트
+        function updateMemories() {
+            const allPhotos = [
+                ...Object.values(entries),
+                ...Object.values(partnerEntries)
+            ]
+            .filter(e => e.photos && e.photos.length > 0)
+            .flatMap(e => e.photos);
+            
+            document.getElementById('galleryCount').textContent = `${allPhotos.length}개의 사진`;
+            
+            const grid = document.getElementById('memoriesGrid');
+            
+            if (allPhotos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">🎞️</div>
+                        <p>아직 사진이 없습니다.<br>일기에 사진을 첨부해보세요!</p>
+                        <button class="empty-state-btn" onclick="goToWrite()">
+                            ✍️ 일기 작성하기
+                        </button>
+                    </div>
+                `;
+            } else {
+                grid.innerHTML = allPhotos.map(photo => 
+                    `<div class="memory-item" onclick="openModal('${photo}')">
+                        <img src="${photo}" alt="추억">
+                    </div>`
+                ).join('');
+            }
+        }
+
+        // 이미지 모달
+        function openModal(photoSrc) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.classList.add('active');
+            modalImg.src = photoSrc;
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+        }
+
+        // 댓글 추가
+        function addComment(dateStr) {
+            const input = document.getElementById(`comment-input-${dateStr}`);
+            const text = input.value.trim();
+            
+            if (text) {
+                if (!partnerEntries[dateStr].comments) {
+                    partnerEntries[dateStr].comments = [];
+                }
+                
+                partnerEntries[dateStr].comments.push({
+                    author: '나',
+                    text: text,
+                    createdAt: new Date().toISOString()
+                });
+                
+                localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                displayDateEntries(dateStr);
+            }
+        }
+
+        // 댓글 수정
+        function editComment(dateStr, commentIndex) {
+            const comment = partnerEntries[dateStr].comments[commentIndex];
+            const commentElement = document.getElementById(`comment-${dateStr}-${commentIndex}`);
+            
+            commentElement.innerHTML = `
+                <div class="comment-header">
+                    <div class="comment-author">${myIcon} ${comment.author}</div>
+                </div>
+                <input type="text" class="comment-edit-input" id="edit-input-${dateStr}-${commentIndex}" value="${comment.text}">
+                <div class="comment-edit-actions">
+                    <button class="comment-save-btn" onclick="saveCommentEdit('${dateStr}', ${commentIndex})">저장</button>
+                    <button class="comment-cancel-btn" onclick="cancelCommentEdit('${dateStr}')">취소</button>
+                </div>
+            `;
+            
+            document.getElementById(`edit-input-${dateStr}-${commentIndex}`).focus();
+        }
+
+        // 댓글 수정 저장
+        function saveCommentEdit(dateStr, commentIndex) {
+            const input = document.getElementById(`edit-input-${dateStr}-${commentIndex}`);
+            const newText = input.value.trim();
+            
+            if (newText) {
+                partnerEntries[dateStr].comments[commentIndex].text = newText;
+                partnerEntries[dateStr].comments[commentIndex].editedAt = new Date().toISOString();
+                localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                displayDateEntries(dateStr);
+            }
+        }
+
+        // 댓글 수정 취소
+        function cancelCommentEdit(dateStr) {
+            displayDateEntries(dateStr);
+        }
+
+        // 댓글 삭제
+        function deleteComment(dateStr, commentIndex) {
+            showConfirmModal(
+                '댓글을 삭제하시겠습니까?',
+                '삭제된 댓글은 복구할 수 없습니다.',
+                () => {
+                    if (partnerEntries[dateStr] && partnerEntries[dateStr].comments) {
+                        partnerEntries[dateStr].comments.splice(commentIndex, 1);
+                        localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                        displayDateEntries(dateStr);
+                    }
+                },
+                '💬'
+            );
+        }
+
+        // 검색 기능
+        function searchDiaries() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (!query) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+            
+            const allEntries = [
+                ...Object.entries(entries).map(([date, entry]) => ({date, entry, type: 'my'})),
+                ...Object.entries(partnerEntries).map(([date, entry]) => ({date, entry, type: 'partner'}))
+            ];
+            
+            const results = allEntries.filter(({entry}) => 
+                entry.content.toLowerCase().includes(query)
+            ).sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 12px;">검색 결과가 없습니다.</p>';
+                return;
+            }
+            
+            const html = results.map(({date, entry, type}) => {
+                const icon = type === 'my' ? myIcon : partnerIcon;
+                const preview = entry.content.substring(0, 60) + (entry.content.length > 60 ? '...' : '');
+                return `
+                    <div class="search-result-item" onclick="goToSearchResult('${date}')">
+                        <div class="search-result-date">${icon} ${date}</div>
+                        <div class="search-result-preview">${preview}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            resultsContainer.innerHTML = html;
+        }
+
+        // 검색 결과로 이동
+        function goToSearchResult(dateStr) {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+            
+            // 해당 날짜로 달력 이동
+            const [year, month] = dateStr.split('-').map(Number);
+            currentDate = new Date(year, month - 1, 1);
+            renderCalendar();
+            
+            // 해당 날짜 선택
+            setTimeout(() => {
+                selectDate(dateStr);
+                document.getElementById('selectedDayEntries').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        // 일기 작성 페이지로 이동
+        function goToWrite() {
+            switchTab('write', document.querySelectorAll('.tab-btn')[1]);
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('entryDate').value = today;
+        }
+
+        function goToWriteWithDate(dateStr) {
+            switchTab('write', document.querySelectorAll('.tab-btn')[1]);
+            document.getElementById('entryDate').value = dateStr;
+        }
+
+        // 탭 전환
+        function switchTab(tabName, btnElement) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            if (btnElement) {
+                btnElement.classList.add('active');
+            }
+            
+            if (tabName === 'memories') {
+                updateMemories();
+            }
+        }
+
+        // 초기화
+        init();
+    </script>
+</body>
+</html>
