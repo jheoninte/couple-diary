@@ -183,11 +183,29 @@ async function saveDataToFirestore() {
         
         // myEntries 객체 구조 생성
         const myEntriesData = existingData.myEntries || {};
+        
+        // 내 일기 저장
         myEntriesData[myUserId] = entries;
         
-        // 파트너 일기도 업데이트 (댓글/좋아요를 파트너 일기에 남긴 경우)
-        if (partnerUserId && Object.keys(partnerEntries).length > 0) {
-            myEntriesData[partnerUserId] = partnerEntries;
+        // 파트너 일기 저장 (댓글/좋아요를 파트너 일기에 남긴 경우)
+        // 중요: partnerEntries가 비어있어도 Firebase의 기존 파트너 데이터를 유지해야 함
+        if (partnerUserId) {
+            // 로컬 partnerEntries와 Firebase의 기존 파트너 데이터를 병합
+            const existingPartnerEntries = myEntriesData[partnerUserId] || {};
+            
+            // partnerEntries에 새로운 데이터가 있으면 병합
+            if (Object.keys(partnerEntries).length > 0) {
+                // 각 날짜별로 병합
+                for (const dateKey in partnerEntries) {
+                    existingPartnerEntries[dateKey] = partnerEntries[dateKey];
+                }
+                myEntriesData[partnerUserId] = existingPartnerEntries;
+                
+                console.log('📝 파트너 일기 업데이트:', {
+                    dates: Object.keys(partnerEntries),
+                    totalPartnerEntries: Object.keys(existingPartnerEntries).length
+                });
+            }
         }
         
         // settings 객체 구조 생성
@@ -209,7 +227,10 @@ async function saveDataToFirestore() {
 
         await setDoc(coupleDocRef, updateData, { merge: true });
 
-        console.log('✅ Firestore에 데이터 저장 완료');
+        console.log('✅ Firestore에 데이터 저장 완료:', {
+            myEntriesCount: Object.keys(entries).length,
+            partnerEntriesCount: partnerUserId ? Object.keys(myEntriesData[partnerUserId] || {}).length : 0
+        });
         
         // 저장 완료 후 잠시 대기 (Firebase에서 동기화 이벤트 받을 시간)
         setTimeout(() => {
