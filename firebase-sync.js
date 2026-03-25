@@ -567,13 +567,16 @@ window.addComment = async function(dateStr) {
         // 내 일기인지 파트너 일기인지 확인
         let targetEntries = null;
         let isPartner = false;
+        let targetUserId = null;
         
         if (entries[dateStr]) {
             targetEntries = entries;
             isPartner = false;
+            targetUserId = myUserId;
         } else if (partnerEntries[dateStr]) {
             targetEntries = partnerEntries;
             isPartner = true;
+            targetUserId = partnerUserId;
         } else {
             console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', dateStr);
             alert('일기 데이터를 찾을 수 없습니다.');
@@ -598,12 +601,13 @@ window.addComment = async function(dateStr) {
         console.log('💬 댓글 추가 성공:', {
             date: dateStr,
             isPartner: isPartner,
+            targetUserId: targetUserId,
             text: commentText,
             totalComments: targetEntries[dateStr].comments.length
         });
         
-        // Firebase에 저장
-        await saveDataToFirestore();
+        // Firebase에 직접 저장 (중요!)
+        await saveCommentToFirebase(targetUserId, dateStr, targetEntries[dateStr]);
         
         // 입력란 초기화
         commentInput.value = '';
@@ -617,19 +621,66 @@ window.addComment = async function(dateStr) {
     }
 };
 
+// Firebase에 댓글/좋아요 직접 저장
+async function saveCommentToFirebase(targetUserId, dateStr, entryData) {
+    if (!currentUser || !coupleDocRef) return;
+    
+    try {
+        isSaving = true;
+        
+        // 현재 Firebase 데이터 가져오기
+        const docSnap = await getDoc(coupleDocRef);
+        const existingData = docSnap.exists() ? docSnap.data() : {};
+        const myEntriesData = existingData.myEntries || {};
+        
+        // 대상 사용자의 일기 데이터 가져오기
+        if (!myEntriesData[targetUserId]) {
+            myEntriesData[targetUserId] = {};
+        }
+        
+        // 해당 날짜의 일기 업데이트
+        myEntriesData[targetUserId][dateStr] = entryData;
+        
+        // Firebase에 저장
+        await setDoc(coupleDocRef, {
+            myEntries: myEntriesData,
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
+        
+        console.log('✅ 댓글 Firebase 저장 완료:', {
+            targetUserId: targetUserId,
+            date: dateStr,
+            comments: entryData.comments?.length || 0,
+            likes: entryData.likedBy?.length || 0
+        });
+        
+        setTimeout(() => {
+            isSaving = false;
+        }, 500);
+        
+    } catch (error) {
+        console.error('❌ 댓글 Firebase 저장 실패:', error);
+        isSaving = false;
+        throw error;
+    }
+}
+
 // 좋아요 토글 (오버라이드) - index.html 구조에 맞춤
 window.toggleLike = async function(dateStr) {
     try {
         // 내 일기인지 파트너 일기인지 확인
         let targetEntries = null;
         let isPartner = false;
+        let targetUserId = null;
         
         if (entries[dateStr]) {
             targetEntries = entries;
             isPartner = false;
+            targetUserId = myUserId;
         } else if (partnerEntries[dateStr]) {
             targetEntries = partnerEntries;
             isPartner = true;
+            targetUserId = partnerUserId;
         } else {
             console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', dateStr);
             alert('일기 데이터를 찾을 수 없습니다.');
@@ -659,12 +710,13 @@ window.toggleLike = async function(dateStr) {
         console.log('✅ 좋아요 토글 성공:', {
             date: dateStr,
             isPartner: isPartner,
+            targetUserId: targetUserId,
             liked: index === -1,
             totalLikes: likedBy.length
         });
         
-        // Firebase에 저장
-        await saveDataToFirestore();
+        // Firebase에 직접 저장
+        await saveCommentToFirebase(targetUserId, dateStr, targetEntries[dateStr]);
         
         // localStorage도 업데이트 (기존 코드 호환성)
         if (isPartner) {
