@@ -169,20 +169,28 @@ async function saveDataToFirestore() {
     if (!currentUser || !coupleDocRef) return;
 
     try {
-        const updateData = {
-            anniversaries: anniversaries,
-            startDate: startDate,
-            updatedAt: new Date().toISOString()
-        };
-
-        // myEntries 업데이트
-        updateData[`myEntries.${myUserId}`] = entries;
+        // 기존 데이터 먼저 가져오기
+        const docSnap = await getDoc(coupleDocRef);
+        const existingData = docSnap.exists() ? docSnap.data() : {};
         
-        // settings 업데이트
-        updateData[`settings.${myUserId}`] = {
+        // myEntries 객체 구조 생성
+        const myEntriesData = existingData.myEntries || {};
+        myEntriesData[myUserId] = entries;
+        
+        // settings 객체 구조 생성
+        const settingsData = existingData.settings || {};
+        settingsData[myUserId] = {
             icon: myIcon,
             theme: currentTheme,
             appTitle: appTitle
+        };
+
+        const updateData = {
+            myEntries: myEntriesData,
+            settings: settingsData,
+            anniversaries: anniversaries,
+            startDate: startDate,
+            updatedAt: new Date().toISOString()
         };
 
         await setDoc(coupleDocRef, updateData, { merge: true });
@@ -201,27 +209,40 @@ function startRealtimeSync() {
         if (doc.exists()) {
             const data = doc.data();
             
+            console.log('🔄 실시간 동기화 수신:', {
+                hasMyEntries: !!data.myEntries,
+                myEntriesKeys: data.myEntries ? Object.keys(data.myEntries) : [],
+                hasSettings: !!data.settings
+            });
+            
             // 내 일기와 파트너 일기 로드
-            if (data.myEntries) {
+            if (data.myEntries && typeof data.myEntries === 'object') {
                 entries = data.myEntries[myUserId] || {};
                 partnerEntries = partnerUserId ? (data.myEntries[partnerUserId] || {}) : {};
+                
+                console.log('📝 동기화 후 일기 수:', {
+                    mine: Object.keys(entries).length,
+                    partner: Object.keys(partnerEntries).length
+                });
+            } else {
+                entries = {};
+                partnerEntries = {};
+                console.log('⚠️ myEntries 없음 또는 잘못된 형식');
             }
             
             // 설정 로드
-            if (data.settings) {
+            if (data.settings && typeof data.settings === 'object') {
                 if (data.settings[myUserId]) {
                     myIcon = data.settings[myUserId].icon || '🐶';
                     currentTheme = data.settings[myUserId].theme || 'pink';
                     appTitle = data.settings[myUserId].appTitle || '우리의 공간';
                 }
                 
-                if (data.settings[partnerUserId]) {
+                if (partnerUserId && data.settings[partnerUserId]) {
                     partnerIcon = data.settings[partnerUserId].icon || '🐱';
                 } else {
                     partnerIcon = '🐱';
                 }
-            } else {
-                partnerIcon = '🐱';
             }
             
             anniversaries = data.anniversaries || [];
@@ -239,7 +260,7 @@ function startRealtimeSync() {
                 displayDateEntries(selectedDate);
             }
             
-            console.log('🔄 실시간 동기화 완료');
+            console.log('✅ 실시간 동기화 완료');
         }
     });
 }
