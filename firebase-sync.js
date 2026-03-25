@@ -305,6 +305,11 @@ function startRealtimeSync() {
             updateMemories();
             updateUpcomingAnniversary();
             
+            // 함께한 날 업데이트 (설정 화면이 열려있을 때)
+            if (typeof updateDaysTogether === 'function') {
+                updateDaysTogether();
+            }
+            
             if (selectedDate) {
                 displayDateEntries(selectedDate);
             }
@@ -483,7 +488,6 @@ window.deleteEntry = function(dateStr) {
 // 설정 저장 (오버라이드)
 window.saveSettings = async function() {
     localStorage.setItem('myIcon', myIcon);
-    localStorage.setItem('partnerIcon', partnerIcon);
     localStorage.setItem('appTheme', currentTheme);
     
     const newTitle = document.getElementById('appTitleInput').value.trim() || '우리의 공간';
@@ -497,6 +501,16 @@ window.saveSettings = async function() {
         if (newDisplayName) {
             myDisplayName = newDisplayName;
             localStorage.setItem('myDisplayName', myDisplayName);
+        }
+    }
+    
+    // 사귄 날짜 저장 (양방향 동기화)
+    const startDateInput = document.getElementById('startDateInput');
+    if (startDateInput && startDateInput.value) {
+        startDate = startDateInput.value;
+        localStorage.setItem('coupleStartDate', startDate);
+        if (typeof updateDaysTogether === 'function') {
+            updateDaysTogether();
         }
     }
     

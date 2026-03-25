@@ -1558,6 +1558,18 @@
             box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
         }
 
+        /* 함께한 날 표시 */
+        .days-together {
+            margin-top: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--soft-pink), var(--cream));
+            border-radius: 12px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
         /* 기념일 관리 */
         .anniversary-list {
             margin-bottom: 16px;
@@ -1920,26 +1932,6 @@
                 </div>
             </div>
 
-            <!-- 파트너 아이콘 선택 -->
-            <div class="settings-section">
-                <div class="settings-section-title">
-                    <span>💕</span> 파트너 아이콘
-                </div>
-                <div class="icon-label">파트너의 동물을 선택하세요</div>
-                <div class="icon-selector">
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐶')">🐶</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐱')">🐱</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐰')">🐰</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐻')">🐻</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🦊')">🦊</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐼')">🐼</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐨')">🐨</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐯')">🐯</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🦁')">🦁</button>
-                    <button class="icon-btn" onclick="selectPartnerIcon(this, '🐸')">🐸</button>
-                </div>
-            </div>
-
             <!-- 테마 색상 선택 -->
             <div class="settings-section">
                 <div class="settings-section-title">
@@ -1997,6 +1989,25 @@
                 </div>
                 <div class="icon-label">상단에 표시될 제목을 입력하세요 (최대 20자)</div>
                 <input type="text" class="title-input" id="appTitleInput" placeholder="우리의 공간" maxlength="20">
+            </div>
+
+            <!-- 닉네임 설정 -->
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    <span>👤</span> 내 닉네임
+                </div>
+                <div class="icon-label">댓글에 표시될 이름을 입력하세요 (최대 10자)</div>
+                <input type="text" class="title-input" id="displayNameInput" placeholder="닉네임 (예: 준)" maxlength="10">
+            </div>
+
+            <!-- 사귄 날짜 설정 -->
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    <span>💕</span> 우리가 사귄 날
+                </div>
+                <div class="icon-label">함께한 날을 카운팅합니다 (양쪽에 동기화됨)</div>
+                <input type="date" class="title-input" id="startDateInput">
+                <div class="days-together" id="daysTogether"></div>
             </div>
 
             <!-- 기념일 관리 -->
@@ -2075,7 +2086,7 @@
             </button>
             <button class="tab-btn" onclick="switchTab('memories', this)">
                 <span class="tab-icon">📸</span>
-                추억
+                앨범
             </button>
         </nav>
 
@@ -2212,7 +2223,7 @@
         <!-- 추억 갤러리 섹션 -->
         <section id="memories" class="section">
             <div class="gallery-header">
-                <h2 class="gallery-title">우리의 추억 📸</h2>
+                <h2 class="gallery-title">우리의 앨범 📸</h2>
                 <p class="gallery-count" id="galleryCount">0개의 사진</p>
             </div>
             <div class="memories-grid" id="memoriesGrid">
@@ -2249,7 +2260,7 @@
     </div>
     
 	<!-- Firebase 연동 스크립트 -->
-	<script type="module" src="firebase-sync.js?v=1000"></script>
+	<script type="module" src="firebase-sync.js?v=2000"></script>
     <script>
         // 전역 변수
         let currentDate = new Date();
@@ -2361,18 +2372,12 @@
         function openSettings() {
             document.getElementById('settingsModal').classList.add('active');
             
-            // 현재 선택된 아이콘 표시
-            document.querySelectorAll('.icon-selector').forEach((selector, index) => {
-                const buttons = selector.querySelectorAll('.icon-btn');
-                buttons.forEach(btn => {
-                    btn.classList.remove('selected');
-                    const icon = btn.textContent;
-                    if (index === 0 && icon === myIcon) {
-                        btn.classList.add('selected');
-                    } else if (index === 1 && icon === partnerIcon) {
-                        btn.classList.add('selected');
-                    }
-                });
+            // 현재 선택된 내 아이콘 표시
+            document.querySelectorAll('.icon-selector .icon-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.textContent === myIcon) {
+                    btn.classList.add('selected');
+                }
             });
             
             // 현재 테마 표시
@@ -2385,6 +2390,19 @@
             
             // 현재 제목 표시
             document.getElementById('appTitleInput').value = appTitle;
+            
+            // 닉네임 표시
+            const displayNameInput = document.getElementById('displayNameInput');
+            if (displayNameInput && typeof myDisplayName !== 'undefined') {
+                displayNameInput.value = myDisplayName;
+            }
+            
+            // 사귄 날짜 표시 및 함께한 날 계산
+            const startDateInput = document.getElementById('startDateInput');
+            if (startDateInput && startDate) {
+                startDateInput.value = startDate;
+                updateDaysTogether();
+            }
             
             // 기념일 리스트 렌더링
             renderAnniversaryList();
@@ -2401,16 +2419,23 @@
             myIcon = icon;
         }
 
-        function selectPartnerIcon(btn, icon) {
-            const selector = btn.parentElement;
-            selector.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            partnerIcon = icon;
+        // 함께한 날 계산 함수
+        function updateDaysTogether() {
+            if (!startDate) return;
+            
+            const start = new Date(startDate);
+            const today = new Date();
+            const diffTime = Math.abs(today - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const daysTogetherEl = document.getElementById('daysTogether');
+            if (daysTogetherEl) {
+                daysTogetherEl.textContent = `💕 함께한 지 ${diffDays}일`;
+            }
         }
 
         function saveSettings() {
             localStorage.setItem('myIcon', myIcon);
-            localStorage.setItem('partnerIcon', partnerIcon);
             
             // 테마는 이미 즉시 적용되었으므로 저장만
             localStorage.setItem('appTheme', currentTheme);
@@ -2419,6 +2444,14 @@
             const newTitle = document.getElementById('appTitleInput').value.trim() || '우리의 공간';
             appTitle = newTitle;
             updateAppTitle(newTitle);
+            
+            // 사귄 날짜 업데이트
+            const startDateInput = document.getElementById('startDateInput');
+            if (startDateInput && startDateInput.value) {
+                startDate = startDateInput.value;
+                localStorage.setItem('coupleStartDate', startDate);
+                updateDaysTogether();
+            }
             
             alert('✅ 설정이 저장되었습니다!');
             closeSettings();
