@@ -220,36 +220,55 @@ async function saveDataToFirestore() {
 function startRealtimeSync() {
     if (unsubscribe) unsubscribe();
 
+    let isFirstLoad = true; // 첫 로드 플래그
+
     unsubscribe = onSnapshot(coupleDocRef, (doc) => {
-        // 저장 중이면 동기화 무시 (로컬 변경사항 보존)
-        if (isSaving) {
-            console.log('⏸️ 저장 중이므로 동기화 대기');
-            return;
-        }
-        
         if (doc.exists()) {
             const data = doc.data();
             
             console.log('🔄 실시간 동기화 수신:', {
                 hasMyEntries: !!data.myEntries,
                 myEntriesKeys: data.myEntries ? Object.keys(data.myEntries) : [],
-                hasSettings: !!data.settings
+                hasSettings: !!data.settings,
+                isFirstLoad: isFirstLoad
             });
             
-            // 내 일기와 파트너 일기 로드
-            if (data.myEntries && typeof data.myEntries === 'object') {
-                entries = data.myEntries[myUserId] || {};
-                partnerEntries = partnerUserId ? (data.myEntries[partnerUserId] || {}) : {};
+            // 첫 로드일 때는 무조건 Firebase 데이터 사용
+            if (isFirstLoad) {
+                if (data.myEntries && typeof data.myEntries === 'object') {
+                    entries = data.myEntries[myUserId] || {};
+                    partnerEntries = partnerUserId ? (data.myEntries[partnerUserId] || {}) : {};
+                } else {
+                    entries = {};
+                    partnerEntries = {};
+                }
                 
-                console.log('📝 동기화 후 일기 수:', {
-                    mine: Object.keys(entries).length,
-                    partner: Object.keys(partnerEntries).length
-                });
+                isFirstLoad = false;
+                console.log('📦 첫 로드 완료');
             } else {
-                entries = {};
-                partnerEntries = {};
-                console.log('⚠️ myEntries 없음 또는 잘못된 형식');
+                // 이후 동기화는 저장 중일 때만 무시
+                if (isSaving) {
+                    console.log('⏸️ 저장 중이므로 동기화 대기');
+                    return;
+                }
+                
+                // 병합 방식으로 업데이트
+                if (data.myEntries && typeof data.myEntries === 'object') {
+                    const newMyEntries = data.myEntries[myUserId] || {};
+                    const newPartnerEntries = partnerUserId ? (data.myEntries[partnerUserId] || {}) : {};
+                    
+                    // 깊은 병합: Firebase 데이터를 우선하되, 로컬 변경사항 보존
+                    entries = mergeEntries(entries, newMyEntries);
+                    partnerEntries = mergeEntries(partnerEntries, newPartnerEntries);
+                    
+                    console.log('🔄 데이터 병합 완료');
+                }
             }
+            
+            console.log('📝 동기화 후 일기 수:', {
+                mine: Object.keys(entries).length,
+                partner: Object.keys(partnerEntries).length
+            });
             
             // 설정 로드
             if (data.settings && typeof data.settings === 'object') {
@@ -284,6 +303,33 @@ function startRealtimeSync() {
             console.log('✅ 실시간 동기화 완료');
         }
     });
+}
+
+// 일기 데이터 병합 함수
+function mergeEntries(localEntries, firebaseEntries) {
+    const merged = {};
+    
+    // Firebase의 모든 날짜 추가
+    for (const date in firebaseEntries) {
+        merged[date] = firebaseEntries[date];
+    }
+    
+    // 로컬에만 있는 날짜 추가 (최근 변경사항)
+    for (const date in localEntries) {
+        if (!merged[date]) {
+            merged[date] = localEntries[date];
+        } else {
+            // 같은 날짜가 있으면 최신 데이터 사용 (createdAt 비교)
+            const localTime = new Date(localEntries[date].createdAt || 0).getTime();
+            const firebaseTime = new Date(merged[date].createdAt || 0).getTime();
+            
+            if (localTime > firebaseTime) {
+                merged[date] = localEntries[date];
+            }
+        }
+    }
+    
+    return merged;
 }
 
 // 사진 업로드
