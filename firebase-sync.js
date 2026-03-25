@@ -106,11 +106,25 @@ async function loadDataFromFirestore() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             
+            console.log('📊 Firestore 전체 데이터:', data);
+            console.log('🔍 myUserId:', myUserId);
+            console.log('🔍 partnerUserId:', partnerUserId);
+            console.log('🔍 myEntries 존재:', !!data.myEntries);
+            
             // myEntries 구조 확인
             if (data.myEntries) {
+                console.log('🔍 myEntries 키들:', Object.keys(data.myEntries));
                 entries = data.myEntries[myUserId] || {};
+                console.log('🔍 내 일기 원본:', entries);
+                
                 // partnerUserId가 null이면 빈 객체
-                partnerEntries = partnerUserId ? (data.myEntries[partnerUserId] || {}) : {};
+                if (partnerUserId) {
+                    partnerEntries = data.myEntries[partnerUserId] || {};
+                    console.log('🔍 파트너 일기 원본:', partnerEntries);
+                } else {
+                    partnerEntries = {};
+                    console.log('⚠️ partnerUserId가 null입니다!');
+                }
             }
             
             // 설정 로드
@@ -131,8 +145,8 @@ async function loadDataFromFirestore() {
             if (data.startDate) startDate = data.startDate;
 
             console.log('✅ Firestore에서 데이터 로드 완료');
-            console.log('내 일기 수:', Object.keys(entries).length);
-            console.log('파트너 일기 수:', Object.keys(partnerEntries).length);
+            console.log('📝 내 일기 수:', Object.keys(entries).length);
+            console.log('📝 파트너 일기 수:', Object.keys(partnerEntries).length);
             
             // UI 업데이트
             applyTheme(currentTheme);
