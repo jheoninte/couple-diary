@@ -447,14 +447,40 @@ window.saveSettings = async function() {
 
 // 댓글 추가 (오버라이드)
 window.addComment = async function(dateStr, isPartner = false) {
-    const commentInput = document.getElementById(isPartner ? 'partnerCommentInput' : 'commentInput');
+    try {
+        const commentInput = document.getElementById(isPartner ? 'partnerCommentInput' : 'commentInput');
+        
+        if (!commentInput) {
+            console.error('❌ 댓글 입력란을 찾을 수 없습니다:', isPartner ? 'partnerCommentInput' : 'commentInput');
+            // 대체 방법: 클래스로 찾기
+            const allInputs = document.querySelectorAll('.comment-input');
+            if (allInputs.length > 0) {
+                const input = isPartner ? allInputs[1] : allInputs[0];
+                if (input) {
+                    processComment(dateStr, isPartner, input);
+                }
+            }
+            return;
+        }
+        
+        processComment(dateStr, isPartner, commentInput);
+    } catch (error) {
+        console.error('❌ 댓글 추가 실패:', error);
+    }
+};
+
+// 댓글 처리 함수
+async function processComment(dateStr, isPartner, commentInput) {
     const commentText = commentInput.value.trim();
     
     if (!commentText) return;
     
     const targetEntries = isPartner ? partnerEntries : entries;
     
-    if (!targetEntries[dateStr]) return;
+    if (!targetEntries[dateStr]) {
+        console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', dateStr);
+        return;
+    }
     
     if (!targetEntries[dateStr].comments) {
         targetEntries[dateStr].comments = [];
@@ -470,36 +496,47 @@ window.addComment = async function(dateStr, isPartner = false) {
     
     targetEntries[dateStr].comments.push(comment);
     
+    console.log('💬 댓글 추가:', comment);
+    
     // Firebase에 저장
     await saveDataToFirestore();
     
     commentInput.value = '';
     displayDateEntries(dateStr);
-};
+}
 
 // 좋아요 토글 (오버라이드)
 window.toggleLike = async function(dateStr, isPartner = false) {
-    const targetEntries = isPartner ? partnerEntries : entries;
-    
-    if (!targetEntries[dateStr]) return;
-    
-    if (!targetEntries[dateStr].likedBy) {
-        targetEntries[dateStr].likedBy = [];
+    try {
+        const targetEntries = isPartner ? partnerEntries : entries;
+        
+        if (!targetEntries[dateStr]) {
+            console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', dateStr);
+            return;
+        }
+        
+        if (!targetEntries[dateStr].likedBy) {
+            targetEntries[dateStr].likedBy = [];
+        }
+        
+        const likedBy = targetEntries[dateStr].likedBy;
+        const index = likedBy.indexOf(myUserId);
+        
+        if (index > -1) {
+            likedBy.splice(index, 1);
+            console.log('💔 좋아요 취소');
+        } else {
+            likedBy.push(myUserId);
+            console.log('❤️ 좋아요 추가');
+        }
+        
+        // Firebase에 저장
+        await saveDataToFirestore();
+        
+        displayDateEntries(dateStr);
+    } catch (error) {
+        console.error('❌ 좋아요 토글 실패:', error);
     }
-    
-    const likedBy = targetEntries[dateStr].likedBy;
-    const index = likedBy.indexOf(myUserId);
-    
-    if (index > -1) {
-        likedBy.splice(index, 1);
-    } else {
-        likedBy.push(myUserId);
-    }
-    
-    // Firebase에 저장
-    await saveDataToFirestore();
-    
-    displayDateEntries(dateStr);
 };
 
 console.log('🔥 Firebase 스크립트 v2.2 로드 완료 (댓글/좋아요 Firebase 저장 추가)');
