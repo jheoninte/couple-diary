@@ -28,6 +28,8 @@ let unsubscribe = null;
 let myUserId = null;
 let partnerUserId = null;
 let isSaving = false; // 저장 중 플래그
+let myDisplayName = '나'; // 내 닉네임
+let partnerDisplayName = '파트너'; // 파트너 닉네임
 
 // 로그인 체크
 onAuthStateChanged(auth, async (user) => {
@@ -133,13 +135,16 @@ async function loadDataFromFirestore() {
                 myIcon = data.settings[myUserId].icon || '🐶';
                 currentTheme = data.settings[myUserId].theme || 'pink';
                 appTitle = data.settings[myUserId].appTitle || '우리의 공간';
+                myDisplayName = data.settings[myUserId].displayName || '나';
             }
             
             if (data.settings && data.settings[partnerUserId]) {
                 partnerIcon = data.settings[partnerUserId].icon || '🐱';
+                partnerDisplayName = data.settings[partnerUserId].displayName || '파트너';
             } else {
-                // 파트너가 아직 연결 안 된 경우 기본 아이콘
+                // 파트너가 아직 연결 안 된 경우 기본값
                 partnerIcon = '🐱';
+                partnerDisplayName = '파트너';
             }
             
             if (data.anniversaries) anniversaries = data.anniversaries;
@@ -190,7 +195,8 @@ async function saveDataToFirestore() {
         settingsData[myUserId] = {
             icon: myIcon,
             theme: currentTheme,
-            appTitle: appTitle
+            appTitle: appTitle,
+            displayName: myDisplayName
         };
 
         const updateData = {
@@ -276,12 +282,15 @@ function startRealtimeSync() {
                     myIcon = data.settings[myUserId].icon || '🐶';
                     currentTheme = data.settings[myUserId].theme || 'pink';
                     appTitle = data.settings[myUserId].appTitle || '우리의 공간';
+                    myDisplayName = data.settings[myUserId].displayName || '나';
                 }
                 
                 if (partnerUserId && data.settings[partnerUserId]) {
                     partnerIcon = data.settings[partnerUserId].icon || '🐱';
+                    partnerDisplayName = data.settings[partnerUserId].displayName || '파트너';
                 } else {
                     partnerIcon = '🐱';
+                    partnerDisplayName = '파트너';
                 }
             }
             
@@ -481,6 +490,16 @@ window.saveSettings = async function() {
     appTitle = newTitle;
     updateAppTitle(newTitle);
     
+    // 닉네임 저장
+    const displayNameInput = document.getElementById('displayNameInput');
+    if (displayNameInput) {
+        const newDisplayName = displayNameInput.value.trim();
+        if (newDisplayName) {
+            myDisplayName = newDisplayName;
+            localStorage.setItem('myDisplayName', myDisplayName);
+        }
+    }
+    
     await saveDataToFirestore();
     
     alert('✅ 설정이 저장되었습니다!');
@@ -535,6 +554,7 @@ window.addComment = async function(dateStr) {
             author: myUserId,
             authorEmail: currentUser.email,
             authorIcon: myIcon,
+            authorName: myDisplayName, // 닉네임 추가
             createdAt: new Date().toISOString()
         };
         
