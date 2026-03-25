@@ -177,6 +177,11 @@ async function saveDataToFirestore() {
         const myEntriesData = existingData.myEntries || {};
         myEntriesData[myUserId] = entries;
         
+        // 파트너 일기도 업데이트 (댓글/좋아요를 파트너 일기에 남긴 경우)
+        if (partnerUserId && Object.keys(partnerEntries).length > 0) {
+            myEntriesData[partnerUserId] = partnerEntries;
+        }
+        
         // settings 객체 구조 생성
         const settingsData = existingData.settings || {};
         settingsData[myUserId] = {
@@ -424,4 +429,61 @@ window.saveSettings = async function() {
     displayDateEntries(selectedDate);
 };
 
-console.log('🔥 Firebase 스크립트 v2.1 로드 완료 (데이터 구조 버그 수정)');
+// 댓글 추가 (오버라이드)
+window.addComment = async function(dateStr, isPartner = false) {
+    const commentInput = document.getElementById(isPartner ? 'partnerCommentInput' : 'commentInput');
+    const commentText = commentInput.value.trim();
+    
+    if (!commentText) return;
+    
+    const targetEntries = isPartner ? partnerEntries : entries;
+    
+    if (!targetEntries[dateStr]) return;
+    
+    if (!targetEntries[dateStr].comments) {
+        targetEntries[dateStr].comments = [];
+    }
+    
+    const comment = {
+        text: commentText,
+        author: myUserId,
+        authorEmail: currentUser.email,
+        authorIcon: myIcon,
+        createdAt: new Date().toISOString()
+    };
+    
+    targetEntries[dateStr].comments.push(comment);
+    
+    // Firebase에 저장
+    await saveDataToFirestore();
+    
+    commentInput.value = '';
+    displayDateEntries(dateStr);
+};
+
+// 좋아요 토글 (오버라이드)
+window.toggleLike = async function(dateStr, isPartner = false) {
+    const targetEntries = isPartner ? partnerEntries : entries;
+    
+    if (!targetEntries[dateStr]) return;
+    
+    if (!targetEntries[dateStr].likedBy) {
+        targetEntries[dateStr].likedBy = [];
+    }
+    
+    const likedBy = targetEntries[dateStr].likedBy;
+    const index = likedBy.indexOf(myUserId);
+    
+    if (index > -1) {
+        likedBy.splice(index, 1);
+    } else {
+        likedBy.push(myUserId);
+    }
+    
+    // Firebase에 저장
+    await saveDataToFirestore();
+    
+    displayDateEntries(dateStr);
+};
+
+console.log('🔥 Firebase 스크립트 v2.2 로드 완료 (댓글/좋아요 Firebase 저장 추가)');
