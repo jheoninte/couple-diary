@@ -27,6 +27,7 @@ let coupleDocRef = null;
 let unsubscribe = null;
 let myUserId = null;
 let partnerUserId = null;
+let isSaving = false; // 저장 중 플래그
 
 // 로그인 체크
 onAuthStateChanged(auth, async (user) => {
@@ -169,6 +170,8 @@ async function saveDataToFirestore() {
     if (!currentUser || !coupleDocRef) return;
 
     try {
+        isSaving = true; // 저장 시작
+        
         // 기존 데이터 먼저 가져오기
         const docSnap = await getDoc(coupleDocRef);
         const existingData = docSnap.exists() ? docSnap.data() : {};
@@ -201,8 +204,15 @@ async function saveDataToFirestore() {
         await setDoc(coupleDocRef, updateData, { merge: true });
 
         console.log('✅ Firestore에 데이터 저장 완료');
+        
+        // 저장 완료 후 잠시 대기 (Firebase에서 동기화 이벤트 받을 시간)
+        setTimeout(() => {
+            isSaving = false;
+        }, 500);
+        
     } catch (error) {
         console.error('❌ 데이터 저장 실패:', error);
+        isSaving = false;
     }
 }
 
@@ -211,6 +221,12 @@ function startRealtimeSync() {
     if (unsubscribe) unsubscribe();
 
     unsubscribe = onSnapshot(coupleDocRef, (doc) => {
+        // 저장 중이면 동기화 무시 (로컬 변경사항 보존)
+        if (isSaving) {
+            console.log('⏸️ 저장 중이므로 동기화 대기');
+            return;
+        }
+        
         if (doc.exists()) {
             const data = doc.data();
             
