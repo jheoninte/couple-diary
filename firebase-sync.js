@@ -445,73 +445,93 @@ window.saveSettings = async function() {
     displayDateEntries(selectedDate);
 };
 
-// 댓글 추가 (오버라이드)
-window.addComment = async function(dateStr, isPartner = false) {
+// 댓글 추가 (오버라이드) - index.html 구조에 맞춤
+window.addComment = async function(dateStr) {
     try {
-        const commentInput = document.getElementById(isPartner ? 'partnerCommentInput' : 'commentInput');
+        // 동적으로 생성된 댓글 입력란 찾기
+        const commentInput = document.getElementById(`comment-input-${dateStr}`);
         
         if (!commentInput) {
-            console.error('❌ 댓글 입력란을 찾을 수 없습니다:', isPartner ? 'partnerCommentInput' : 'commentInput');
-            // 대체 방법: 클래스로 찾기
-            const allInputs = document.querySelectorAll('.comment-input');
-            if (allInputs.length > 0) {
-                const input = isPartner ? allInputs[1] : allInputs[0];
-                if (input) {
-                    processComment(dateStr, isPartner, input);
-                }
-            }
+            console.error('❌ 댓글 입력란을 찾을 수 없습니다:', `comment-input-${dateStr}`);
+            alert('댓글 입력란을 찾을 수 없습니다.');
             return;
         }
         
-        processComment(dateStr, isPartner, commentInput);
+        const commentText = commentInput.value.trim();
+        
+        if (!commentText) {
+            alert('댓글을 입력해주세요!');
+            return;
+        }
+        
+        // 내 일기인지 파트너 일기인지 확인
+        let targetEntries = null;
+        let isPartner = false;
+        
+        if (entries[dateStr]) {
+            targetEntries = entries;
+            isPartner = false;
+        } else if (partnerEntries[dateStr]) {
+            targetEntries = partnerEntries;
+            isPartner = true;
+        } else {
+            console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', dateStr);
+            alert('일기 데이터를 찾을 수 없습니다.');
+            return;
+        }
+        
+        if (!targetEntries[dateStr].comments) {
+            targetEntries[dateStr].comments = [];
+        }
+        
+        const comment = {
+            text: commentText,
+            author: myUserId,
+            authorEmail: currentUser.email,
+            authorIcon: myIcon,
+            createdAt: new Date().toISOString()
+        };
+        
+        targetEntries[dateStr].comments.push(comment);
+        
+        console.log('💬 댓글 추가 성공:', {
+            date: dateStr,
+            isPartner: isPartner,
+            text: commentText,
+            totalComments: targetEntries[dateStr].comments.length
+        });
+        
+        // Firebase에 저장
+        await saveDataToFirestore();
+        
+        // 입력란 초기화
+        commentInput.value = '';
+        
+        // UI 즉시 업데이트
+        displayDateEntries(dateStr);
+        
     } catch (error) {
         console.error('❌ 댓글 추가 실패:', error);
+        alert('댓글 추가에 실패했습니다: ' + error.message);
     }
 };
 
-// 댓글 처리 함수
-async function processComment(dateStr, isPartner, commentInput) {
-    const commentText = commentInput.value.trim();
-    
-    if (!commentText) return;
-    
-    const targetEntries = isPartner ? partnerEntries : entries;
-    
-    if (!targetEntries[dateStr]) {
-        console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', dateStr);
-        return;
-    }
-    
-    if (!targetEntries[dateStr].comments) {
-        targetEntries[dateStr].comments = [];
-    }
-    
-    const comment = {
-        text: commentText,
-        author: myUserId,
-        authorEmail: currentUser.email,
-        authorIcon: myIcon,
-        createdAt: new Date().toISOString()
-    };
-    
-    targetEntries[dateStr].comments.push(comment);
-    
-    console.log('💬 댓글 추가:', comment);
-    
-    // Firebase에 저장
-    await saveDataToFirestore();
-    
-    commentInput.value = '';
-    displayDateEntries(dateStr);
-}
-
-// 좋아요 토글 (오버라이드)
-window.toggleLike = async function(dateStr, isPartner = false) {
+// 좋아요 토글 (오버라이드) - index.html 구조에 맞춤
+window.toggleLike = async function(dateStr) {
     try {
-        const targetEntries = isPartner ? partnerEntries : entries;
+        // 내 일기인지 파트너 일기인지 확인
+        let targetEntries = null;
+        let isPartner = false;
         
-        if (!targetEntries[dateStr]) {
+        if (entries[dateStr]) {
+            targetEntries = entries;
+            isPartner = false;
+        } else if (partnerEntries[dateStr]) {
+            targetEntries = partnerEntries;
+            isPartner = true;
+        } else {
             console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', dateStr);
+            alert('일기 데이터를 찾을 수 없습니다.');
             return;
         }
         
@@ -523,19 +543,41 @@ window.toggleLike = async function(dateStr, isPartner = false) {
         const index = likedBy.indexOf(myUserId);
         
         if (index > -1) {
+            // 좋아요 취소
             likedBy.splice(index, 1);
-            console.log('💔 좋아요 취소');
+            console.log('💔 좋아요 취소:', dateStr);
         } else {
+            // 좋아요 추가
             likedBy.push(myUserId);
-            console.log('❤️ 좋아요 추가');
+            console.log('❤️ 좋아요 추가:', dateStr);
         }
+        
+        // 기존 liked 속성도 업데이트 (호환성)
+        targetEntries[dateStr].liked = likedBy.length > 0;
+        
+        console.log('✅ 좋아요 토글 성공:', {
+            date: dateStr,
+            isPartner: isPartner,
+            liked: index === -1,
+            totalLikes: likedBy.length
+        });
         
         // Firebase에 저장
         await saveDataToFirestore();
         
+        // localStorage도 업데이트 (기존 코드 호환성)
+        if (isPartner) {
+            localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+        } else {
+            localStorage.setItem('diaryEntries', JSON.stringify(entries));
+        }
+        
+        // UI 즉시 업데이트
         displayDateEntries(dateStr);
+        
     } catch (error) {
         console.error('❌ 좋아요 토글 실패:', error);
+        alert('좋아요 처리에 실패했습니다: ' + error.message);
     }
 };
 
