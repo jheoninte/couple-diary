@@ -279,16 +279,16 @@ function startRealtimeSync() {
                     return;
                 }
                 
-                // 병합 방식으로 업데이트
+                // Firebase 데이터를 우선으로 업데이트
                 if (data.myEntries && typeof data.myEntries === 'object') {
                     const newMyEntries = data.myEntries[myUserId] || {};
                     const newPartnerEntries = partnerUserId ? (data.myEntries[partnerUserId] || {}) : {};
                     
-                    // 깊은 병합: Firebase 데이터를 우선하되, 로컬 변경사항 보존
-                    entries = mergeEntries(entries, newMyEntries);
-                    partnerEntries = mergeEntries(partnerEntries, newPartnerEntries);
+                    // Firebase 데이터 우선! (댓글/좋아요가 즉시 반영됨)
+                    entries = newMyEntries;
+                    partnerEntries = newPartnerEntries;
                     
-                    console.log('🔄 데이터 병합 완료');
+                    console.log('🔄 Firebase 데이터로 업데이트 완료');
                 }
             }
             
@@ -631,6 +631,8 @@ async function saveCommentToFirebase(targetUserId, dateStr, entryData) {
         // 현재 Firebase 데이터 가져오기
         const docSnap = await getDoc(coupleDocRef);
         const existingData = docSnap.exists() ? docSnap.data() : {};
+        
+        // 기존 전체 데이터 유지
         const myEntriesData = existingData.myEntries || {};
         
         // 대상 사용자의 일기 데이터 가져오기
@@ -641,17 +643,24 @@ async function saveCommentToFirebase(targetUserId, dateStr, entryData) {
         // 해당 날짜의 일기 업데이트
         myEntriesData[targetUserId][dateStr] = entryData;
         
-        // Firebase에 저장
-        await setDoc(coupleDocRef, {
+        // 전체 데이터 구조 유지하며 저장
+        const updateData = {
             myEntries: myEntriesData,
+            settings: existingData.settings || {},
+            anniversaries: existingData.anniversaries || [],
+            startDate: existingData.startDate || new Date().toISOString().split('T')[0],
             updatedAt: new Date().toISOString()
-        }, { merge: true });
+        };
+        
+        // Firebase에 저장
+        await setDoc(coupleDocRef, updateData, { merge: true });
         
         console.log('✅ 댓글 Firebase 저장 완료:', {
             targetUserId: targetUserId,
             date: dateStr,
             comments: entryData.comments?.length || 0,
-            likes: entryData.likedBy?.length || 0
+            likes: entryData.likedBy?.length || 0,
+            dataStructure: Object.keys(updateData)
         });
         
         setTimeout(() => {
