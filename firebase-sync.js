@@ -3,7 +3,7 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteField } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 // Firebase 설정
@@ -491,19 +491,32 @@ window.deleteEntry = function(dateStr) {
         '일기를 삭제하시겠습니까?',
         '삭제된 일기는 복구할 수 없습니다.',
         async () => {
-            if (entries[dateStr] && entries[dateStr].photos) {
-                for (const photoURL of entries[dateStr].photos) {
-                    await deletePhotoFromStorage(photoURL);
-                }
-            }
+            try {
+                const entry = entries[dateStr];
 
-            delete entries[dateStr];
-            await saveDataToFirestore();
-            
-            renderCalendar();
-            updateStats();
-            updateMemories();
-            displayDateEntries(dateStr);
+                if (entry && Array.isArray(entry.photos) && entry.photos.length > 0) {
+                    for (const photoURL of entry.photos) {
+                        try {
+                            await deletePhotoFromStorage(photoURL);
+                        } catch (photoError) {
+                            console.warn('⚠️ 사진 삭제 실패, 일기 삭제는 계속 진행:', photoError);
+                        }
+                    }
+                }
+
+                delete entries[dateStr];
+                localStorage.setItem('diaryEntries', JSON.stringify(entries));
+
+                await deleteEntryFromFirestore(dateStr);
+
+                renderCalendar();
+                updateStats();
+                updateMemories();
+                displayDateEntries(dateStr);
+            } catch (error) {
+                console.error('❌ 일기 삭제 실패:', error);
+                alert('일기 삭제에 실패했습니다: ' + error.message);
+            }
         },
         '🗑️'
     );
@@ -574,6 +587,19 @@ function persistLocalEntries(type) {
     } else {
         localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
     }
+}
+
+async function deleteEntryFromFirestore(dateStr) {
+    if (!currentUser || !coupleDocRef || !myUserId) return;
+
+    const fieldPath = `myEntries.${myUserId}.${dateStr}`;
+
+    await updateDoc(coupleDocRef, {
+        [fieldPath]: deleteField(),
+        updatedAt: new Date().toISOString()
+    });
+
+    console.log('🗑️ Firestore에서 일기 삭제 완료:', fieldPath);
 }
 
 // 댓글 추가 (오버라이드) - index.html 구조에 맞춤
@@ -829,4 +855,4 @@ window.deleteComment = function(dateStr, commentIndex, type = 'partner') {
     );
 };
 
-console.log('🔥 Firebase 스크립트 v2.4 로드 완료 (안전 수정본: 댓글 표시/대상 분리)');
+console.log('🔥 Firebase 스크립트 v2.5 로드 완료 (댓글/좋아요/일기 삭제 최종 수정본)');
