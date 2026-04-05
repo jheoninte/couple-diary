@@ -548,39 +548,21 @@ window.saveSettings = async function() {
     displayDateEntries(selectedDate);
 };
 
-function resolveEntryTarget(type, dateStr) {
-    if (type === 'my') {
-        if (!entries[dateStr]) return null;
-        return {
-            type: 'my',
-            targetEntries: entries,
-            targetUserId: myUserId
-        };
+function resolveEntryTarget(dateStr, type = null) {
+    if (type === 'my' && entries[dateStr]) {
+        return { targetEntries: entries, targetUserId: myUserId, type: 'my' };
     }
 
-    if (type === 'partner') {
-        if (!partnerEntries[dateStr]) return null;
-        return {
-            type: 'partner',
-            targetEntries: partnerEntries,
-            targetUserId: partnerUserId
-        };
+    if (type === 'partner' && partnerEntries[dateStr]) {
+        return { targetEntries: partnerEntries, targetUserId: partnerUserId, type: 'partner' };
     }
 
     if (partnerEntries[dateStr]) {
-        return {
-            type: 'partner',
-            targetEntries: partnerEntries,
-            targetUserId: partnerUserId
-        };
+        return { targetEntries: partnerEntries, targetUserId: partnerUserId, type: 'partner' };
     }
 
     if (entries[dateStr]) {
-        return {
-            type: 'my',
-            targetEntries: entries,
-            targetUserId: myUserId
-        };
+        return { targetEntries: entries, targetUserId: myUserId, type: 'my' };
     }
 
     return null;
@@ -597,10 +579,10 @@ function persistLocalEntries(type) {
 // 댓글 추가 (오버라이드) - index.html 구조에 맞춤
 window.addComment = async function(dateStr, type = 'partner') {
     try {
-        const commentInput = document.getElementById(`comment-input-${type}-${dateStr}`);
+        const commentInput = document.getElementById(`comment-input-${type}-${dateStr}`) || document.getElementById(`comment-input-${dateStr}`);
         
         if (!commentInput) {
-            console.error('❌ 댓글 입력란을 찾을 수 없습니다:', `comment-input-${type}-${dateStr}`);
+            console.error('❌ 댓글 입력란을 찾을 수 없습니다:', { dateStr, type });
             alert('댓글 입력란을 찾을 수 없습니다.');
             return;
         }
@@ -611,15 +593,15 @@ window.addComment = async function(dateStr, type = 'partner') {
             alert('댓글을 입력해주세요!');
             return;
         }
-
-        const resolved = resolveEntryTarget(type, dateStr);
+        
+        const resolved = resolveEntryTarget(dateStr, type);
         if (!resolved) {
             console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', { dateStr, type });
             alert('일기 데이터를 찾을 수 없습니다.');
             return;
         }
-
-        const { targetEntries, targetUserId } = resolved;
+        
+        const { targetEntries, targetUserId, type: resolvedType } = resolved;
         
         if (!targetEntries[dateStr].comments) {
             targetEntries[dateStr].comments = [];
@@ -635,18 +617,17 @@ window.addComment = async function(dateStr, type = 'partner') {
         };
         
         targetEntries[dateStr].comments.push(comment);
-        persistLocalEntries(type);
+        persistLocalEntries(resolvedType);
         
         console.log('💬 댓글 추가 성공:', {
             date: dateStr,
-            type,
-            targetUserId,
+            type: resolvedType,
+            targetUserId: targetUserId,
             text: commentText,
             totalComments: targetEntries[dateStr].comments.length
         });
         
         await saveCommentToFirebase(targetUserId, dateStr, targetEntries[dateStr]);
-        
         commentInput.value = '';
         displayDateEntries(dateStr);
         
@@ -663,16 +644,22 @@ async function saveCommentToFirebase(targetUserId, dateStr, entryData) {
     try {
         isSaving = true;
         
+        // 현재 Firebase 데이터 가져오기
         const docSnap = await getDoc(coupleDocRef);
         const existingData = docSnap.exists() ? docSnap.data() : {};
+        
+        // 기존 전체 데이터 유지
         const myEntriesData = existingData.myEntries || {};
         
+        // 대상 사용자의 일기 데이터 가져오기
         if (!myEntriesData[targetUserId]) {
             myEntriesData[targetUserId] = {};
         }
         
+        // 해당 날짜의 일기 업데이트
         myEntriesData[targetUserId][dateStr] = entryData;
         
+        // 전체 데이터 구조 유지하며 저장
         const updateData = {
             myEntries: myEntriesData,
             settings: existingData.settings || {},
@@ -681,10 +668,11 @@ async function saveCommentToFirebase(targetUserId, dateStr, entryData) {
             updatedAt: new Date().toISOString()
         };
         
+        // Firebase에 저장
         await setDoc(coupleDocRef, updateData, { merge: true });
         
         console.log('✅ 댓글 Firebase 저장 완료:', {
-            targetUserId,
+            targetUserId: targetUserId,
             date: dateStr,
             comments: entryData.comments?.length || 0,
             likes: entryData.likedBy?.length || 0,
@@ -705,14 +693,14 @@ async function saveCommentToFirebase(targetUserId, dateStr, entryData) {
 // 좋아요 토글 (오버라이드) - index.html 구조에 맞춤
 window.toggleLike = async function(dateStr, type = 'partner') {
     try {
-        const resolved = resolveEntryTarget(type, dateStr);
+        const resolved = resolveEntryTarget(dateStr, type);
         if (!resolved) {
             console.error('❌ 해당 날짜의 일기를 찾을 수 없습니다:', { dateStr, type });
             alert('일기 데이터를 찾을 수 없습니다.');
             return;
         }
 
-        const { targetEntries, targetUserId } = resolved;
+        const { targetEntries, targetUserId, type: resolvedType } = resolved;
         
         if (!targetEntries[dateStr].likedBy) {
             targetEntries[dateStr].likedBy = [];
@@ -730,12 +718,12 @@ window.toggleLike = async function(dateStr, type = 'partner') {
         }
         
         targetEntries[dateStr].liked = likedBy.length > 0;
-        persistLocalEntries(type);
+        persistLocalEntries(resolvedType);
         
         console.log('✅ 좋아요 토글 성공:', {
             date: dateStr,
-            type,
-            targetUserId,
+            type: resolvedType,
+            targetUserId: targetUserId,
             liked: index === -1,
             totalLikes: likedBy.length
         });
@@ -750,7 +738,7 @@ window.toggleLike = async function(dateStr, type = 'partner') {
 };
 
 window.editComment = function(dateStr, commentIndex, type = 'partner') {
-    const resolved = resolveEntryTarget(type, dateStr);
+    const resolved = resolveEntryTarget(dateStr, type);
     if (!resolved) return;
 
     const { targetEntries } = resolved;
@@ -759,7 +747,7 @@ window.editComment = function(dateStr, commentIndex, type = 'partner') {
     const commentElement = document.getElementById(`comment-${type}-${dateStr}-${commentIndex}`);
 
     if (!comment || !commentElement) return;
-    if (comment.author !== myUserId) {
+    if (comment.author !== myUserId && comment.author !== '나') {
         alert('내가 작성한 댓글만 수정할 수 있습니다.');
         return;
     }
@@ -771,7 +759,7 @@ window.editComment = function(dateStr, commentIndex, type = 'partner') {
         <input type="text" class="comment-edit-input" id="edit-input-${type}-${dateStr}-${commentIndex}" value="${comment.text}">
         <div class="comment-edit-actions">
             <button class="comment-save-btn" onclick="window.saveCommentEdit('${dateStr}', ${commentIndex}, '${type}')">저장</button>
-            <button class="comment-cancel-btn" onclick="window.cancelCommentEdit('${dateStr}')">취소</button>
+            <button class="comment-cancel-btn" onclick="window.cancelCommentEdit('${dateStr}', '${type}')">취소</button>
         </div>
     `;
 
@@ -780,15 +768,15 @@ window.editComment = function(dateStr, commentIndex, type = 'partner') {
 
 window.saveCommentEdit = async function(dateStr, commentIndex, type = 'partner') {
     try {
-        const resolved = resolveEntryTarget(type, dateStr);
+        const resolved = resolveEntryTarget(dateStr, type);
         if (!resolved) return;
 
-        const { targetEntries, targetUserId } = resolved;
+        const { targetEntries, targetUserId, type: resolvedType } = resolved;
         const entry = targetEntries[dateStr];
         const input = document.getElementById(`edit-input-${type}-${dateStr}-${commentIndex}`);
 
         if (!entry || !input || !entry.comments?.[commentIndex]) return;
-        if (entry.comments[commentIndex].author !== myUserId) {
+        if (entry.comments[commentIndex].author !== myUserId && entry.comments[commentIndex].author !== '나') {
             alert('내가 작성한 댓글만 수정할 수 있습니다.');
             return;
         }
@@ -798,7 +786,7 @@ window.saveCommentEdit = async function(dateStr, commentIndex, type = 'partner')
 
         entry.comments[commentIndex].text = newText;
         entry.comments[commentIndex].editedAt = new Date().toISOString();
-        persistLocalEntries(type);
+        persistLocalEntries(resolvedType);
         await saveCommentToFirebase(targetUserId, dateStr, entry);
         displayDateEntries(dateStr);
     } catch (error) {
@@ -817,19 +805,19 @@ window.deleteComment = function(dateStr, commentIndex, type = 'partner') {
         '삭제된 댓글은 복구할 수 없습니다.',
         async () => {
             try {
-                const resolved = resolveEntryTarget(type, dateStr);
+                const resolved = resolveEntryTarget(dateStr, type);
                 if (!resolved) return;
 
-                const { targetEntries, targetUserId } = resolved;
+                const { targetEntries, targetUserId, type: resolvedType } = resolved;
                 const entry = targetEntries[dateStr];
                 if (!entry?.comments?.[commentIndex]) return;
-                if (entry.comments[commentIndex].author !== myUserId) {
+                if (entry.comments[commentIndex].author !== myUserId && entry.comments[commentIndex].author !== '나') {
                     alert('내가 작성한 댓글만 삭제할 수 있습니다.');
                     return;
                 }
 
                 entry.comments.splice(commentIndex, 1);
-                persistLocalEntries(type);
+                persistLocalEntries(resolvedType);
                 await saveCommentToFirebase(targetUserId, dateStr, entry);
                 displayDateEntries(dateStr);
             } catch (error) {
@@ -841,4 +829,4 @@ window.deleteComment = function(dateStr, commentIndex, type = 'partner') {
     );
 };
 
-console.log('🔥 Firebase 스크립트 v2.3 로드 완료 (댓글/좋아요/수정/삭제 동기화 개선)');
+console.log('🔥 Firebase 스크립트 v2.4 로드 완료 (안전 수정본: 댓글 표시/대상 분리)');
