@@ -2260,7 +2260,7 @@
     </div>
     
 	<!-- Firebase 연동 스크립트 -->
-	<script type="module" src="firebase-sync.js?v=2000"></script>
+	<script type="module" src="firebase-sync-fixed.js?v=2300"></script>
     <script>
         // 전역 변수
         let currentDate = new Date();
@@ -2879,6 +2879,31 @@
             setupCommentEventListeners();
         }
 
+        function getCommentDisplayData(entry, isMyEntry, comment) {
+            const currentUserUid = window.currentUserUid;
+            const partnerUserUid = window.partnerUserUid;
+            let isMyComment = false;
+
+            if (comment.author === currentUserUid) {
+                isMyComment = true;
+            } else if (comment.author === partnerUserUid) {
+                isMyComment = false;
+            } else if (comment.author === '나') {
+                isMyComment = true;
+            } else if (comment.author === '파트너') {
+                isMyComment = false;
+            } else if (entry.author) {
+                const isOwnerComment = comment.author === entry.author;
+                isMyComment = isMyEntry ? isOwnerComment : !isOwnerComment;
+            }
+
+            return {
+                label: isMyComment ? '나' : '파트너',
+                icon: isMyComment ? myIcon : partnerIcon,
+                canEdit: isMyComment
+            };
+        }
+
         // 일기 카드 렌더링
         function renderDiaryCard(dateStr, entry, type) {
             const isMyEntry = type === 'my';
@@ -2886,6 +2911,7 @@
             const writerClass = isMyEntry ? '' : 'partner-writer';
             const writerIcon = isMyEntry ? myIcon : partnerIcon;
             const writerName = isMyEntry ? '나' : '파트너';
+            const commentCount = entry.comments ? entry.comments.length : 0;
             
             let html = `
                 <div class="diary-card ${cardClass}">
@@ -2934,36 +2960,38 @@
                 `;
             } else {
                 const likedClass = entry.liked ? 'liked' : '';
-                const commentCount = entry.comments ? entry.comments.length : 0;
                 html += `
                     <div class="diary-actions">
-                        <button class="action-btn ${likedClass}" onclick="toggleLike('${dateStr}')">
+                        <button class="action-btn ${likedClass}" onclick="window.toggleLike('${dateStr}', '${type}')">
                             ${entry.liked ? '❤️' : '🤍'} 좋아요
                         </button>
-                        <button class="action-btn" onclick="toggleCommentInput('${dateStr}')">💬 댓글 ${commentCount > 0 ? `(${commentCount})` : ''}</button>
+                        <button class="action-btn" onclick="window.toggleCommentInput('${dateStr}', '${type}')">💬 댓글 ${commentCount > 0 ? `(${commentCount})` : ''}</button>
                     </div>
                 `;
-                
-                // 댓글 섹션
-                html += `<div class="comments-section" id="comments-${dateStr}">`;
-                if (entry.comments && entry.comments.length > 0) {
-                    entry.comments.forEach((comment, index) => {
-                        html += `
-                            <div class="comment" id="comment-${dateStr}-${index}">
-                                <div class="comment-header">
-                                    <div class="comment-author">${myIcon} ${comment.author}</div>
-                                    <div class="comment-actions">
-                                        <button class="comment-action-btn" data-action="edit" data-date="${dateStr}" data-index="${index}">수정</button>
-                                        <button class="comment-action-btn" data-action="delete" data-date="${dateStr}" data-index="${index}">삭제</button>
-                                    </div>
-                                </div>
-                                <div class="comment-text">${comment.text}</div>
-                            </div>
-                        `;
-                    });
-                }
-                html += '</div>';
             }
+
+            // 댓글 섹션은 내 일기/파트너 일기 모두 렌더링
+            html += `<div class="comments-section" id="comments-${type}-${dateStr}">`;
+            if (entry.comments && entry.comments.length > 0) {
+                entry.comments.forEach((comment, index) => {
+                    const display = getCommentDisplayData(entry, isMyEntry, comment);
+                    html += `
+                        <div class="comment" id="comment-${type}-${dateStr}-${index}">
+                            <div class="comment-header">
+                                <div class="comment-author">${display.icon} ${display.label}</div>
+                                <div class="comment-actions">
+                                    ${display.canEdit ? `
+                                        <button class="comment-action-btn" data-action="edit" data-type="${type}" data-date="${dateStr}" data-index="${index}">수정</button>
+                                        <button class="comment-action-btn" data-action="delete" data-type="${type}" data-date="${dateStr}" data-index="${index}">삭제</button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="comment-text">${comment.text}</div>
+                        </div>
+                    `;
+                });
+            }
+            html += '</div>';
             
             html += '</div>';
             return html;
@@ -2974,13 +3002,14 @@
             document.querySelectorAll('.comment-action-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const action = this.dataset.action;
+                    const type = this.dataset.type;
                     const dateStr = this.dataset.date;
                     const index = parseInt(this.dataset.index);
                     
                     if (action === 'edit') {
-                        editComment(dateStr, index);
+                        window.editComment(dateStr, index, type);
                     } else if (action === 'delete') {
-                        deleteComment(dateStr, index);
+                        window.deleteComment(dateStr, index, type);
                     }
                 });
             });
@@ -3118,19 +3147,31 @@
             );
         }
 
+        function getEntryCollectionByType(type) {
+            return type === 'my' ? entries : partnerEntries;
+        }
+
         // 좋아요 토글
-        function toggleLike(dateStr) {
-            if (partnerEntries[dateStr]) {
-                partnerEntries[dateStr].liked = !partnerEntries[dateStr].liked;
-                localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+        function toggleLike(dateStr, type = 'partner') {
+            const targetEntries = getEntryCollectionByType(type);
+            if (targetEntries[dateStr]) {
+                targetEntries[dateStr].liked = !targetEntries[dateStr].liked;
+                if (type === 'my') {
+                    localStorage.setItem('diaryEntries', JSON.stringify(entries));
+                } else {
+                    localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                }
                 displayDateEntries(dateStr);
             }
         }
 
         // 댓글 입력창 토글
-        function toggleCommentInput(dateStr) {
-            const commentsSection = document.getElementById(`comments-${dateStr}`);
+        function toggleCommentInput(dateStr, type = 'partner') {
+            const commentsSection = document.getElementById(`comments-${type}-${dateStr}`);
+            if (!commentsSection) return;
+
             const existingInput = commentsSection.querySelector('.comment-input-group');
+            const inputId = `comment-input-${type}-${dateStr}`;
             
             if (existingInput) {
                 existingInput.remove();
@@ -3138,30 +3179,38 @@
                 const inputGroup = document.createElement('div');
                 inputGroup.className = 'comment-input-group';
                 inputGroup.innerHTML = `
-                    <input type="text" placeholder="댓글을 입력하세요..." id="comment-input-${dateStr}">
-                    <button onclick="addComment('${dateStr}')">등록</button>
+                    <input type="text" placeholder="댓글을 입력하세요..." id="${inputId}">
+                    <button onclick="window.addComment('${dateStr}', '${type}')">등록</button>
                 `;
                 commentsSection.appendChild(inputGroup);
-                document.getElementById(`comment-input-${dateStr}`).focus();
+                document.getElementById(inputId).focus();
             }
         }
 
         // 댓글 추가
-        function addComment(dateStr) {
-            const input = document.getElementById(`comment-input-${dateStr}`);
+        function addComment(dateStr, type = 'partner') {
+            const targetEntries = getEntryCollectionByType(type);
+            const input = document.getElementById(`comment-input-${type}-${dateStr}`);
+            if (!input) return;
+
             const text = input.value.trim();
             
-            if (text) {
-                if (!partnerEntries[dateStr].comments) {
-                    partnerEntries[dateStr].comments = [];
+            if (text && targetEntries[dateStr]) {
+                if (!targetEntries[dateStr].comments) {
+                    targetEntries[dateStr].comments = [];
                 }
                 
-                partnerEntries[dateStr].comments.push({
+                targetEntries[dateStr].comments.push({
                     author: '나',
-                    text: text
+                    text: text,
+                    createdAt: new Date().toISOString()
                 });
                 
-                localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                if (type === 'my') {
+                    localStorage.setItem('diaryEntries', JSON.stringify(entries));
+                } else {
+                    localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                }
                 displayDateEntries(dateStr);
             }
         }
@@ -3292,54 +3341,78 @@
         }
 
         // 댓글 추가
-        function addComment(dateStr) {
-            const input = document.getElementById(`comment-input-${dateStr}`);
+        function addComment(dateStr, type = 'partner') {
+            const targetEntries = getEntryCollectionByType(type);
+            const input = document.getElementById(`comment-input-${type}-${dateStr}`);
+            if (!input) return;
+
             const text = input.value.trim();
             
-            if (text) {
-                if (!partnerEntries[dateStr].comments) {
-                    partnerEntries[dateStr].comments = [];
+            if (text && targetEntries[dateStr]) {
+                if (!targetEntries[dateStr].comments) {
+                    targetEntries[dateStr].comments = [];
                 }
                 
-                partnerEntries[dateStr].comments.push({
+                targetEntries[dateStr].comments.push({
                     author: '나',
                     text: text,
                     createdAt: new Date().toISOString()
                 });
                 
-                localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                if (type === 'my') {
+                    localStorage.setItem('diaryEntries', JSON.stringify(entries));
+                } else {
+                    localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                }
                 displayDateEntries(dateStr);
             }
         }
 
         // 댓글 수정
-        function editComment(dateStr, commentIndex) {
-            const comment = partnerEntries[dateStr].comments[commentIndex];
-            const commentElement = document.getElementById(`comment-${dateStr}-${commentIndex}`);
+        function editComment(dateStr, commentIndex, type = 'partner') {
+            const targetEntries = getEntryCollectionByType(type);
+            const entry = targetEntries[dateStr];
+            if (!entry || !entry.comments || !entry.comments[commentIndex]) return;
+
+            const comment = entry.comments[commentIndex];
+            const commentElement = document.getElementById(`comment-${type}-${dateStr}-${commentIndex}`);
+            if (!commentElement) return;
+
+            const isMyComment = comment.author === '나' || comment.author === window.currentUserUid;
+            const authorLabel = isMyComment ? '나' : '파트너';
+            const authorIcon = isMyComment ? myIcon : partnerIcon;
             
             commentElement.innerHTML = `
                 <div class="comment-header">
-                    <div class="comment-author">${myIcon} ${comment.author}</div>
+                    <div class="comment-author">${authorIcon} ${authorLabel}</div>
                 </div>
-                <input type="text" class="comment-edit-input" id="edit-input-${dateStr}-${commentIndex}" value="${comment.text}">
+                <input type="text" class="comment-edit-input" id="edit-input-${type}-${dateStr}-${commentIndex}" value="${comment.text}">
                 <div class="comment-edit-actions">
-                    <button class="comment-save-btn" onclick="saveCommentEdit('${dateStr}', ${commentIndex})">저장</button>
-                    <button class="comment-cancel-btn" onclick="cancelCommentEdit('${dateStr}')">취소</button>
+                    <button class="comment-save-btn" onclick="window.saveCommentEdit('${dateStr}', ${commentIndex}, '${type}')">저장</button>
+                    <button class="comment-cancel-btn" onclick="window.cancelCommentEdit('${dateStr}')">취소</button>
                 </div>
             `;
             
-            document.getElementById(`edit-input-${dateStr}-${commentIndex}`).focus();
+            document.getElementById(`edit-input-${type}-${dateStr}-${commentIndex}`).focus();
         }
 
         // 댓글 수정 저장
-        function saveCommentEdit(dateStr, commentIndex) {
-            const input = document.getElementById(`edit-input-${dateStr}-${commentIndex}`);
+        function saveCommentEdit(dateStr, commentIndex, type = 'partner') {
+            const targetEntries = getEntryCollectionByType(type);
+            const entry = targetEntries[dateStr];
+            const input = document.getElementById(`edit-input-${type}-${dateStr}-${commentIndex}`);
+            if (!entry || !input) return;
+
             const newText = input.value.trim();
             
-            if (newText) {
-                partnerEntries[dateStr].comments[commentIndex].text = newText;
-                partnerEntries[dateStr].comments[commentIndex].editedAt = new Date().toISOString();
-                localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+            if (newText && entry.comments && entry.comments[commentIndex]) {
+                entry.comments[commentIndex].text = newText;
+                entry.comments[commentIndex].editedAt = new Date().toISOString();
+                if (type === 'my') {
+                    localStorage.setItem('diaryEntries', JSON.stringify(entries));
+                } else {
+                    localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                }
                 displayDateEntries(dateStr);
             }
         }
@@ -3350,14 +3423,19 @@
         }
 
         // 댓글 삭제
-        function deleteComment(dateStr, commentIndex) {
+        function deleteComment(dateStr, commentIndex, type = 'partner') {
+            const targetEntries = getEntryCollectionByType(type);
             showConfirmModal(
                 '댓글을 삭제하시겠습니까?',
                 '삭제된 댓글은 복구할 수 없습니다.',
                 () => {
-                    if (partnerEntries[dateStr] && partnerEntries[dateStr].comments) {
-                        partnerEntries[dateStr].comments.splice(commentIndex, 1);
-                        localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                    if (targetEntries[dateStr] && targetEntries[dateStr].comments) {
+                        targetEntries[dateStr].comments.splice(commentIndex, 1);
+                        if (type === 'my') {
+                            localStorage.setItem('diaryEntries', JSON.stringify(entries));
+                        } else {
+                            localStorage.setItem('partnerEntries', JSON.stringify(partnerEntries));
+                        }
                         displayDateEntries(dateStr);
                     }
                 },
