@@ -35,7 +35,10 @@ public class DiaryStore: CAPPlugin, CAPBridgedPlugin {
         Task { @MainActor in
             do {
                 let rows = try await Product.products(for: identifiers)
-                call.resolve(["products": rows.map { ["id": $0.id, "displayPrice": $0.displayPrice, "displayName": $0.displayName] }])
+                // amount/currency let the Plus screen compute the yearly discount in the store's own currency.
+                call.resolve(["products": rows.map { ["id": $0.id, "displayPrice": $0.displayPrice, "displayName": $0.displayName,
+                                                      "amount": NSDecimalNumber(decimal: $0.price).doubleValue,
+                                                      "currency": $0.priceFormatStyle.currencyCode] }])
             } catch { call.reject("App Store 상품을 불러오지 못했습니다.", nil, error) }
         }
     }

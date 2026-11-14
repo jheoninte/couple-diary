@@ -41,10 +41,23 @@
 - `reviewer.20261114@comino.app`(민서), `reviewer.partner.20261114@comino.app`(지우). 이메일 인증, 서로 연결, 샘플 일기 2개·댓글 1개.
 - 실제 서버 API로 생성: `REVIEW_PASSWORD_A=… REVIEW_PASSWORD_B=… node scripts/provision-review-accounts.mjs --project couple-diary-75157` (재실행 안전, 비밀번호는 저장소에 없음).
 
+## TestFlight 2026111422 피드백 수정 (2026-11-14)
+
+- **구독 버튼 비활성:** Capacitor 8 `SceneDelegate`가 `CAPBridgeViewController()`를 직접 만들어 `DiaryViewController`(StoreKit 플러그인 `DiaryStore` 등록)가 실행되지 않았음 → `DiaryViewController()`로 교체, `configure-ios.cjs`가 강제. 상품에 금액·통화(`amount`, `currency`)가 없어 할인 계산이 실패하던 문제도 수정. 시뮬레이터에서 "Apple로 구독하기" 활성·가격 표시 확인.
+- **추적 팝업 미표시:** AdMob UMP가 `no form(s) configured for the input app ID`(코드 4)로 실패하면 ATT 단계까지 건너뛰었음 → 동의 실패와 무관하게 ATT 요청, 광고는 비개인화(npa)로 계속. 시뮬레이터에서 팝업 표시·광고 송출 확인.
+- **화면 확대:** 모든 페이지 viewport `maximum-scale=1, user-scalable=no`, CSS `touch-action: manipulation`, 네이티브 WebView 핀치 확대 비활성.
+- **로그인/가입 언어 선택기:** 본문 가로 레이아웃의 두 번째 열로 붙어 화면이 깨졌음 → 로그인 카드 맨 아래(온보딩은 하단)로 이동.
+- **추가 수정:** 네이티브 배너가 Plus 구독 시트 위를 덮어 "구매 복원"이 가려졌음 → 시트·모달이 열려 있는 동안 배너 제거, 닫히면 다시 표시.
+
+### 👤 AdMob 콘솔에서 할 일
+- [ ] AdMob → 개인정보 보호 및 메시지 → 이 앱(`ca-app-pub-6762072012517736~9647026272`)에 **GDPR(유럽) 동의 메시지**와 **IDFA 안내 메시지**를 만들어 게시. 게시 전까지는 모든 지역에서 비개인화 광고만 나가며, EEA 사용자에게는 동의 없이 광고가 나가는 상태라 출시 전에 설정을 권장.
+
 ## 남은 일
 
+- [x] 운영 빌드 1.0 (2026111422) 업로드·처리 완료, COMINO Internal 그룹에 추가(2026-11-14).
+
 ### 👤 App Store Connect
-- [ ] **App Store 서버 알림 — Production URL:** `https://asia-northeast3-couple-diary-75157.cloudfunctions.net/appleNotifications` (앱 정보 → App Store 서버 알림). Sandbox URL은 스테이징 그대로 둬도 된다.
+- [x] **App Store 서버 알림 — Production URL** (2026-11-14 설정 완료): `https://asia-northeast3-couple-diary-75157.cloudfunctions.net/appleNotifications` (앱 정보 → App Store 서버 알림). Sandbox URL은 스테이징 그대로 둬도 된다.
 - [ ] App Review 정보: 리뷰 계정 1개(민서)를 로그인 정보로, 메모에 "파트너 계정(지우)과 이미 연결됨. 초대 코드 흐름은 새 계정 가입 후 확인 가능. Plus는 Sandbox 구매로 확인 가능"과 파트너 계정 정보를 적는다.
 - [ ] 첫 구독 2개를 앱 버전과 함께 제출(버전 페이지 "앱 내 구입 및 구독"), 구독별 심사용 스크린샷·현지화.
 - [ ] 유료 앱 계약·세금·은행 정보 활성.

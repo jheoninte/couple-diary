@@ -98,7 +98,7 @@ function render() {
     const {monthly,yearly} = billing.products;
     document.getElementById('monthlyPrice').textContent = t('{price} / 월', { price: monthly.displayPrice });
     document.getElementById('yearlyPrice').textContent = t('{price} / 년', { price: yearly.displayPrice });
-    const sameCurrency = monthly.currency === yearly.currency;
+    const sameCurrency = typeof monthly.currency === 'string' && monthly.currency === yearly.currency && Number.isFinite(monthly.amount) && Number.isFinite(yearly.amount);
     document.getElementById('annualDiscount').textContent = sameCurrency ? t('{n}% 할인', { n: fmt.number(annualDiscount(monthly.amount, yearly.amount)) }) : '';
     document.getElementById('annualEquivalent').textContent = sameCurrency ? t('월 {price} 수준 · 연간 일시 결제', { price: fmt.currency(yearly.amount / 12, yearly.currency) }) : '연간 일시 결제';
   }

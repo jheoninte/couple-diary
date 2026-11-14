@@ -12,6 +12,9 @@ set('NSPhotoLibraryUsageDescription','string','일기에 첨부할 사진을 앨
 // iPhone only: no iPad layout or screenshots are maintained.
 spawnSync('/usr/libexec/PlistBuddy',['-c','Delete :UISupportedInterfaceOrientations~ipad',plist]);
 set('CFBundleDevelopmentRegion','string','ko');
+// Capacitor 8's SceneDelegate builds the root controller in code; it must be DiaryViewController, which registers
+// the StoreKit plugin (DiaryStore) and disables zoom. A plain CAPBridgeViewController leaves purchases disabled.
+{const sd=root+'/SceneDelegate.swift';if(fs.existsSync(sd))fs.writeFileSync(sd,fs.readFileSync(sd,'utf8').replace('rootViewController = CAPBridgeViewController()','rootViewController = DiaryViewController()'));}
 const sb=root+'/Base.lproj/Main.storyboard';fs.writeFileSync(sb,fs.readFileSync(sb,'utf8').replace('customClass="CAPBridgeViewController" customModule="Capacitor"','customClass="DiaryViewController" customModule="App"'));
 const p='ios/App/App.xcodeproj/project.pbxproj';let s=fs.readFileSync(p,'utf8');
 for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift'].entries()){

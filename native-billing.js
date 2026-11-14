@@ -49,20 +49,25 @@ if (window.diaryNativeReady) {
     context = next; const version = ++revision;
     window.diaryBilling.available = false; changed();
     if (!next || next.archive) return;
+    let step = 'native';
     try {
       await window.diaryNativeReady;
       if (!initialized) initialized = window.diaryStore.onTransaction(event => {
         if (context) verify(event.signedTransaction, revision).catch(() => {});
       });
       await initialized;
+      step = 'server';
       const { available } = await remote('availability');
-      if (!available || version !== revision) return;
+      if (!available || version !== revision) { if (!available) console.warn('[billing] server reports billing unavailable'); return; }
+      step = 'products';
       const products = await window.diaryStore.load();
+      const missing = Object.values(NATIVE_CONFIG.products).filter(id => !products.some(product => product.id === id));
+      if (missing.length) console.warn('[billing] App Store returned', products.length, 'products; missing', missing.join(','));
       if (version !== revision) return;
       window.diaryBilling.products = Object.fromEntries(Object.entries(NATIVE_CONFIG.products).map(([plan, id]) => [plan, products.find(product => product.id === id)]));
       window.diaryBilling.available = true; changed();
       await sync((await window.diaryStore.pending()).transactions, version);
-    } catch { /* Restore remains available; never manufacture a successful purchase. */ }
+    } catch (e) { console.warn('[billing] setup failed at', step, e?.code || '', e?.message || e); /* Never manufacture a successful purchase. */ }
   }
   window.addEventListener('diary:context', event => {
     const next = event.detail;
