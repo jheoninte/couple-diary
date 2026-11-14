@@ -30,9 +30,9 @@ async function render() {
         else if(!session.archive&&entry.author===data.partnerUid)data.partnerEntries[entry.date]={...entry,photoPaths,photos};
     }
     if(current!==generation)return;
-    ui.render(data);renderTrash();
+    ui.render(data);
     if(!editorInitialized){ui.openEditor(localDate(),false);editorInitialized=true;}
-    if(!ready){ready=true;document.getElementById('authGate').hidden=true;ui.status(session.archive?'보관함 · 내 일기만 읽을 수 있습니다.':'최신 기록을 불러왔습니다.','success');}
+    if(!ready){ready=true;document.getElementById('authGate').hidden=true;if(location.hash==='#settings'){history.replaceState(null,'',location.pathname+location.search);window.openSettings?.();}ui.status(session.archive?'보관함 · 내 일기만 읽을 수 있습니다.':'최신 기록을 불러왔습니다.','success');}
 }
 function subscribeEntries() {
     entryStop?.();ready=false;
@@ -46,16 +46,6 @@ function subscribeEntries() {
 function target(date,type='partner') {
     const uid=type==='my'?session.uid:(couple.user1===session.uid?couple.user2:couple.user1);
     const entry=records.get(`${uid}_${date}`);if(!entry)throw Error('일기를 찾을 수 없습니다.');return entry;
-}
-function renderTrash() {
-    const list=document.getElementById('trashList');list.replaceChildren();
-    const deleted=[...records.values()].filter(e=>e.author===session.uid&&e.deletedAt);
-    if(!deleted.length)list.textContent='불러온 기록에 삭제한 일기가 없습니다.';
-    for(const entry of deleted){
-        const row=document.createElement('p'),label=document.createElement('span');label.textContent=`${entry.date} · ${entry.content.slice(0,40)} `;row.append(label);
-        if(!session.archive){const button=document.createElement('button');button.textContent='복원';button.onclick=()=>action(`restore-${entry.date}`,null,()=>api.call('restoreEntry',{coupleId:session.coupleId,date:entry.date,revision:entry.revision}));row.append(button);}
-        list.append(row);
-    }
 }
 window.diaryActions={
     photoURL:api.photoURL,
@@ -96,10 +86,10 @@ window.diaryActions={
             }
         });
     },
-    deleteEntry(date){const entry=target(date,'my');window.showConfirmModal('일기를 휴지통으로 옮길까요?','휴지통에서 복원할 수 있습니다.',()=>action(`delete-${date}`,null,()=>api.call('deleteEntry',{coupleId:session.coupleId,date,revision:entry.revision})),'🗑️');},
+    deleteEntry(date){const entry=target(date,'my');window.showConfirmModal('일기를 삭제할까요?','삭제한 일기는 다시 볼 수 없습니다.',()=>action(`delete-${date}`,null,()=>api.call('deleteEntry',{coupleId:session.coupleId,date,revision:entry.revision})),'🗑️');},
     saveSettings(){return action('settings','saveSettingsBtn',async()=>{
         const state=ui.state(),settings={icon:state.myIcon,theme:state.currentTheme,appTitle:document.getElementById('appTitleInput').value.trim()||'우리의 공간',displayName:document.getElementById('displayNameInput').value.trim()||'나'};
-        await api.call('settings',{coupleId:session.coupleId,settings,startDate:document.getElementById('startDateInput').value});ui.closeSettings();
+        await api.call('settings',{coupleId:session.coupleId,settings,startDate:document.getElementById('startDateInput').value});
     });},
     saveAnniversary(){return action('anniversary','saveAnniversaryBtn',async()=>{
         const data={coupleId:session.coupleId,name:document.getElementById('anniversaryName').value.trim(),date:document.getElementById('anniversaryDate').value,icon:ui.state().selectedAnniversaryIcon,recurring:document.getElementById('anniversaryRecurring').checked},key=JSON.stringify(data);
@@ -122,18 +112,8 @@ window.diaryActions={
     },
     toggleLike(date,type='partner'){const e=target(date,type);return action(`like-${e.author}-${date}`,null,()=>api.call('like',{coupleId:session.coupleId,author:e.author,date,liked:!(e.likedBy||[]).includes(session.uid)}));}
 };
-document.getElementById('trashBtn').onclick=()=>{renderTrash();document.getElementById('trashDialog').showModal();};
 document.getElementById('loadOlderBtn').onclick=()=>{pageSize+=100;subscribeEntries();};
 document.getElementById('logoutBtn').onclick=async()=>{ui.persistDraft();try{await signOut(auth);}catch(e){fail(e);}};
-document.getElementById('exportBtn').onclick=async()=>{
-    const button=document.getElementById('exportBtn');button.disabled=true;
-    try{
-        const rows=await api.allEntries(session.coupleId,session.archive);
-        const payload={format:'couple-diary-v2',exportedAt:new Date().toISOString(),coupleId:session.coupleId,settings:couple.settings,startDate:couple.startDate,anniversaries:couple.anniversaries,entries:rows};
-        const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download=`couple-diary-${localDate()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-        ui.status('전체 기록을 JSON으로 내보냈습니다. 사진은 파일 경로만 포함됩니다.','success');
-    }catch(e){fail(e);}finally{button.disabled=false;}
-};
 window.addEventListener('offline',()=>ui.status('오프라인입니다. 작성 중인 초안은 이 기기에 보관됩니다.','info'));
 window.addEventListener('online',()=>ui.status('인터넷에 다시 연결되었습니다. 저장 버튼으로 초안을 저장해주세요.','info'));
 onAuthStateChanged(auth,async user=>{
@@ -146,9 +126,8 @@ onAuthStateChanged(auth,async user=>{
         session={uid:user.uid,coupleId:initial.coupleId,archive:!!archiveId};ui.session(session);couple=await api.getCouple(session.coupleId);
         window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
         document.getElementById('coupleConnectionLink').href=pageURL('couple-connect.html');
-        document.getElementById('accountDeletionLink').href=pageURL('account-delete.html');
         if(!couple)throw Error('일기장을 찾을 수 없습니다.');
-        if(session.archive){document.querySelector('.quick-write-btn').hidden=true;document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.settings-btn').hidden=true;}
+        if(session.archive){document.querySelector('.quick-write-btn').hidden=true;document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.nav-settings').hidden=true;}
         stops.push(api.watchCouple(session.coupleId,value=>{
             if(!value||(!session.archive&&value.status!=='active')){ui.persistDraft();location.replace(pageURL('couple-connect.html'));return;}
             couple=value;render().catch(fail);window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));

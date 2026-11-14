@@ -4,7 +4,7 @@ import { doc, getDoc, getDocFromServer, collection, query, orderBy, limit, start
 import { ref, uploadBytes, getBlob, deleteObject } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
 export const call=async(action,data={})=>{
     try{return (await httpsCallable(functions,'diary',{timeout:['initialize','disconnect'].includes(action)?540000:20000})({action,...data})).data;}
-    catch(error){if(error.details?.accountDeletion)location.replace(pageURL('account-delete.html'));throw error;}
+    catch(error){throw error;}
 };
 export const getUser=async()=> (await getDoc(doc(db,'users',auth.currentUser.uid))).data()||{};
 export const getCouple=async id=>(await getDoc(doc(db,'couples',id))).data();

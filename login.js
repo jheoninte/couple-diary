@@ -5,7 +5,7 @@ import {createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordRe
 const $=id=>document.getElementById(id);
 document.querySelector('.auth-brand').href=pageURL('login.html');
 let mode='login',busy=false,resetUntil=0;
-function message(text,kind='error'){const el=$('errorMessage');el.textContent=text;el.dataset.kind=kind;el.setAttribute('role',kind==='error'?'alert':'status');el.classList.add('show');}
+function message(text,kind='error'){const el=$('errorMessage');el.textContent=text;el.dataset.kind=kind;el.setAttribute('role',kind==='error'?'alert':'status');el.classList.add('show');clearTimeout(el._hideTimer);el._hideTimer=setTimeout(()=>el.classList.remove('show'),2500);}
 function clear(){$('errorMessage').classList.remove('show');}
 function tab(next){
  if(busy)return;

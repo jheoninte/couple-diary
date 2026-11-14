@@ -26,51 +26,6 @@
   background: var(--cream);
   font-synthesis: none;
 }
-:root[data-theme="lavender"] {
-  --primary: #7865ae;
-  --secondary: #655292;
-  --soft-pink: #f1edf8;
-}
-:root[data-theme="mint"] {
-  --primary: #377e68;
-  --secondary: #286651;
-  --soft-pink: #ecf5ef;
-}
-:root[data-theme="peach"] {
-  --primary: #a8643c;
-  --secondary: #8e4e2c;
-  --soft-pink: #fbf0e8;
-}
-:root[data-theme="coral"] {
-  --primary: #ca5866;
-  --secondary: #b14553;
-  --soft-pink: #fbeef0;
-}
-:root[data-theme="sky"] {
-  --primary: #387d96;
-  --secondary: #28667e;
-  --soft-pink: #eaf4f8;
-}
-:root[data-theme="rose"] {
-  --primary: #bf4059;
-  --secondary: #a33249;
-  --soft-pink: #fbecef;
-}
-:root[data-theme="lilac"] {
-  --primary: #92609f;
-  --secondary: #7b4989;
-  --soft-pink: #f5edf7;
-}
-:root[data-theme="sage"] {
-  --primary: #607d5c;
-  --secondary: #4c6548;
-  --soft-pink: #eef4ec;
-}
-:root[data-theme="mauve"] {
-  --primary: #956580;
-  --secondary: #80526c;
-  --soft-pink: #f6eef2;
-}
 * {
   box-sizing: border-box;
   margin: 0;
@@ -1354,36 +1309,6 @@ h3 {
   font-size: 9px;
   margin-top: 5px;
   color: var(--text-light);
-}
-.theme-pink {
-  background: #dc5b64;
-}
-.theme-lavender {
-  background: #7865ae;
-}
-.theme-mint {
-  background: #377e68;
-}
-.theme-peach {
-  background: #a8643c;
-}
-.theme-coral {
-  background: #ca5866;
-}
-.theme-sky {
-  background: #387d96;
-}
-.theme-rose {
-  background: #bf4059;
-}
-.theme-lilac {
-  background: #92609f;
-}
-.theme-sage {
-  background: #607d5c;
-}
-.theme-mauve {
-  background: #956580;
 }
 .days-together {
   background: var(--soft-pink);

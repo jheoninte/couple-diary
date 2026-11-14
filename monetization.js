@@ -39,7 +39,7 @@ adBanner.hidden = true;
 adBanner.setAttribute("aria-label", "광고");
 adBanner.innerHTML =
   '<span class="ad-label">광고</span><div id="adBannerMount"></div>';
-document.querySelector(".app-footer").before(adBanner);
+document.getElementById("mainContent").after(adBanner);
 const entry = document.getElementById("membershipBtn");
 document.querySelector(".membership-close").onclick = () => dialog.close();
 dialog.addEventListener("click", (e) => {

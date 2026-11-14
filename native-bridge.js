@@ -62,6 +62,10 @@ async function initializeNative() {
     if (overlayOpen()) { if (bannerVisible) { bannerVisible = false; document.documentElement.style.setProperty('--native-ad-space', '0px'); sdk.AdMob.removeBanner().catch(() => {}); } }
     else if (!bannerVisible) window.diaryNativeAds.showBanner().catch(() => {});
   }
+  // The plugin attaches the banner only when the ad finishes loading, so a removal before that is a no-op.
+  // If an ad arrives while no banner is wanted (an overlay opened meanwhile), take it down immediately.
+  let loadListener;
+  async function watchBannerLoads() { if (loadListener || !sdk) return; loadListener = await sdk.AdMob.addListener('bannerAdLoaded', () => { if (!bannerVisible) sdk.AdMob.removeBanner().catch(() => {}); }); }
   new MutationObserver(syncBannerWithOverlays).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['open', 'class'] });
   window.diaryNativeAds = {
     async showBanner() {
@@ -73,6 +77,7 @@ async function initializeNative() {
       document.documentElement.style.setProperty('--native-nav-space', `${navHeight}px`);
       document.documentElement.style.setProperty('--native-ad-space', '60px');
       bannerVisible = true;
+      await watchBannerLoads().catch(() => {});
       try {
         await sdk.AdMob.showBanner({ adId: NATIVE_CONFIG.bannerId, isTesting: NATIVE_CONFIG.testAds,
           adSize: sdk.BannerAdSize.BANNER, npa: nonPersonalized, position: sdk.BannerAdPosition.BOTTOM_CENTER, margin: Math.ceil(navHeight + 8) });
@@ -89,13 +94,5 @@ async function initializeNative() {
       await sdk.AdMob.showInterstitial();
     }
   };
-  const footer = document.querySelector('.app-footer');
-  if (footer) {
-    const button = document.createElement('button');
-    button.className = 'text-button'; button.textContent = '광고 개인정보 설정';
-    button.onclick = () => window.diaryAdConsent.privacy().catch(() =>
-      window.diaryUI?.status('광고 개인정보 설정을 열지 못했습니다. 잠시 후 다시 시도해주세요.', 'error'));
-    footer.append(document.createElement('br'), button);
-  }
   window.dispatchEvent(new Event('diary:native-ready'));
 }

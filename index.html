@@ -22,13 +22,6 @@
     <script>setTimeout(function(){var gate=document.getElementById('authGate');if(gate&&!gate.hidden){document.getElementById('loadingMessage').textContent='연결이 지연되고 있어요. 인터넷 연결을 확인해주세요.';document.getElementById('startupRecovery').hidden=false;}},15000);</script>
     <div id="syncStatus" role="status" aria-live="polite">연결 중…</div>
 
-    <dialog id="trashDialog">
-      <h2>삭제한 일기</h2>
-      <div id="trashList"></div>
-      <button onclick="document.getElementById('trashDialog').close()">
-        닫기
-      </button>
-    </dialog>
     <a class="skip-link" href="#mainContent">본문으로 건너뛰기</a>
     <aside class="desktop-brand">
       <span class="brand-symbol"
@@ -59,26 +52,7 @@
           aria-label="커플 Plus 구독 안내"
         >
           PLUS</button
-        ><button
-          class="settings-btn"
-          aria-label="설정 열기"
-          onclick="openSettings()"
         >
-          <svg
-            class="ui-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.65"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M4 7h16M4 17h16" />
-            <circle cx="9" cy="7" r="3" />
-            <circle cx="15" cy="17" r="3" />
-          </svg>
-        </button>
       </div>
     </header>
     <!-- 설정 모달 -->
@@ -92,18 +66,9 @@
       <div class="settings-content">
         <div class="settings-header">
           <h2 class="settings-title" id="settingsTitle">나의 공간</h2>
-          <button
-            class="settings-close"
-            aria-label="설정 닫기"
-            onclick="closeSettings()"
-          >
-            ×
-          </button>
         </div>
 
-        <div class="language-setting"><label for="languageSelect">언어</label><select id="languageSelect" data-language-picker aria-label="언어"></select><p>이 기기에만 적용됩니다. 일기와 댓글은 번역되지 않습니다.</p></div>
         <nav class="account-tools" aria-label="계정 메뉴">
-          <a id="accountDeletionLink" href="account-delete.html">계정 삭제</a>
           <a id="coupleConnectionLink" href="couple-connect.html"
             >커플 연결 관리
             <svg
@@ -117,49 +82,7 @@
               aria-hidden="true"
             >
               <path d="m9 5 7 7-7 7" /></svg></a
-          ><button id="exportBtn">
-            기록 내보내기
-            <svg
-              class="ui-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.65"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M5 12h14m-5-5 5 5-5 5" />
-            </svg></button
-          ><button id="trashBtn">
-            휴지통
-            <svg
-              class="ui-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.65"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m9 5 7 7-7 7" />
-            </svg></button
-          ><button id="logoutBtn">
-            로그아웃
-            <svg
-              class="ui-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.65"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M5 12h14m-5-5 5 5-5 5" />
-            </svg>
-          </button>
+          >
         </nav>
         <!-- 내 아이콘 선택 -->
         <div class="settings-section">
@@ -205,91 +128,51 @@
           <div class="icon-label">원하는 색상을 선택하세요</div>
           <div class="theme-selector">
             <div class="theme-item">
-              <button
-                class="theme-btn theme-pink"
-                aria-label="핑크 테마"
-                onclick="selectTheme(this, 'pink')"
-              ></button>
-              <div class="theme-label">핑크</div>
+              <button class="theme-btn" data-theme-id="blue" aria-label="모던 블루" onclick="selectTheme(this, 'blue')"></button>
+              <div class="theme-label">모던 블루</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-lavender"
-                aria-label="라벤더 테마"
-                onclick="selectTheme(this, 'lavender')"
-              ></button>
-              <div class="theme-label">라벤더</div>
+              <button class="theme-btn" data-theme-id="rose" aria-label="비비드 로즈" onclick="selectTheme(this, 'rose')"></button>
+              <div class="theme-label">비비드 로즈</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-mint"
-                aria-label="민트 테마"
-                onclick="selectTheme(this, 'mint')"
-              ></button>
-              <div class="theme-label">민트</div>
+              <button class="theme-btn" data-theme-id="purple" aria-label="퍼플 헤이즈" onclick="selectTheme(this, 'purple')"></button>
+              <div class="theme-label">퍼플 헤이즈</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-peach"
-                aria-label="피치 테마"
-                onclick="selectTheme(this, 'peach')"
-              ></button>
-              <div class="theme-label">피치</div>
+              <button class="theme-btn" data-theme-id="teal" aria-label="딥 틸" onclick="selectTheme(this, 'teal')"></button>
+              <div class="theme-label">딥 틸</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-coral"
-                aria-label="코랄 테마"
-                onclick="selectTheme(this, 'coral')"
-              ></button>
-              <div class="theme-label">코랄</div>
+              <button class="theme-btn" data-theme-id="coral" aria-label="코랄 블러시" onclick="selectTheme(this, 'coral')"></button>
+              <div class="theme-label">코랄 블러시</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-sky"
-                aria-label="스카이 테마"
-                onclick="selectTheme(this, 'sky')"
-              ></button>
-              <div class="theme-label">스카이</div>
+              <button class="theme-btn" data-theme-id="sage" aria-label="어반 세이지" onclick="selectTheme(this, 'sage')"></button>
+              <div class="theme-label">어반 세이지</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-rose"
-                aria-label="로즈 테마"
-                onclick="selectTheme(this, 'rose')"
-              ></button>
-              <div class="theme-label">로즈</div>
+              <button class="theme-btn" data-theme-id="orange" aria-label="선셋 오렌지" onclick="selectTheme(this, 'orange')"></button>
+              <div class="theme-label">선셋 오렌지</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-lilac"
-                aria-label="라일락 테마"
-                onclick="selectTheme(this, 'lilac')"
-              ></button>
-              <div class="theme-label">라일락</div>
+              <button class="theme-btn" data-theme-id="burgundy" aria-label="클래식 버건디" onclick="selectTheme(this, 'burgundy')"></button>
+              <div class="theme-label">클래식 버건디</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-sage"
-                aria-label="세이지 테마"
-                onclick="selectTheme(this, 'sage')"
-              ></button>
-              <div class="theme-label">세이지</div>
+              <button class="theme-btn" data-theme-id="sand" aria-label="웜 샌드" onclick="selectTheme(this, 'sand')"></button>
+              <div class="theme-label">웜 샌드</div>
             </div>
             <div class="theme-item">
-              <button
-                class="theme-btn theme-mauve"
-                aria-label="모브 테마"
-                onclick="selectTheme(this, 'mauve')"
-              ></button>
-              <div class="theme-label">모브</div>
+              <button class="theme-btn" data-theme-id="navy" aria-label="미드나잇 네이비" onclick="selectTheme(this, 'navy')"></button>
+              <div class="theme-label">미드나잇 네이비</div>
             </div>
           </div>
         </div>
 
-        <!-- 앱 제목 변경 -->
+        <!-- 일기 제목 변경 -->
         <div class="settings-section">
-          <div class="settings-section-title"><span>✏️</span> 앱 제목</div>
+          <div class="settings-section-title"><span>✏️</span> 일기 제목</div>
           <div class="icon-label">
             상단에 표시될 제목을 입력하세요 (최대 30자)
           </div>
@@ -297,7 +180,7 @@
             type="text"
             class="title-input"
             id="appTitleInput"
-            aria-label="앱 제목"
+            aria-label="일기 제목"
             placeholder="우리의 공간"
             maxlength="30"
           />
@@ -630,6 +513,24 @@
         >
           저장하기
         </button>
+        <div class="settings-bottom">
+          <div class="language-setting"><label for="languageSelect">언어</label><select id="languageSelect" data-language-picker aria-label="언어"></select><p>이 기기에만 적용됩니다. 일기와 댓글은 번역되지 않습니다.</p></div>
+          <button id="logoutBtn" class="logout-btn">
+            로그아웃
+            <svg
+              class="ui-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.65"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14m-5-5 5 5-5 5" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1061,9 +962,6 @@
     </div>
 
     <!-- Firebase 연동 스크립트 -->
-    <footer class="app-footer">
-      <a href="https://www.comino.app/girl-privacy" target="_blank" rel="noopener noreferrer">개인정보 처리방침</a> · <a href="https://www.comino.app/girl-service" target="_blank" rel="noopener noreferrer">이용약관</a> · <a href="licenses.html">공휴일 데이터·오픈소스 안내</a>
-    </footer>
     <script type="module" src="app-ui.js?v=20261114-plus"></script>
   <script type="module" src="page-links.js"></script></body>
 </html>

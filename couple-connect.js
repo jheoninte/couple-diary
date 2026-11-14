@@ -6,10 +6,10 @@ import {normalizeInviteCode,formatInviteCode} from './invite-code.js';
 import {withTimeout} from './request-timeout.js';
 import {t,fmt} from './i18n.js';
 const $=id=>document.getElementById(id);
-document.querySelector('.back-link').href=pageURL('index.html');$('accountDeletionLink').href=pageURL('account-delete.html');
+document.querySelector('.back-link').href=pageURL('index.html')+'#settings';
 let user=null,coupleId=null,currentCouple=null,stopUser=null,stopCouple=null,busy=false,ready=false,mode=null,revision=0,spaceRevision=0,verifyUntil=0;
 function clear(){for(const id of ['errorMessage','successMessage'])$(id).classList.remove('show');}
-function message(text,error=false){clear();const el=$(error?'errorMessage':'successMessage');el.textContent=text;el.classList.add('show');}
+function message(text,error=false){clear();const el=$(error?'errorMessage':'successMessage');el.textContent=text;el.classList.add('show');clearTimeout(el._hideTimer);el._hideTimer=setTimeout(()=>el.classList.remove('show'),2500);}
 function controls(){const valid=!!currentCouple?.inviteCode&&currentCouple.inviteExpiresAt>Date.now();for(const id of ['copyInviteBtn','shareInviteBtn'])$(id).disabled=busy||!valid;$('connectBtn').disabled=busy||!!coupleId;$('verifyEmailBtn').disabled=busy||Date.now()<verifyUntil;$('verifyEmailBtn').textContent=Date.now()<verifyUntil?'확인 메일을 보냈어요':'이메일 확인 메일 보내기';}
 async function run(fn){if(busy||!user||!ready)return;busy=true;clear();document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}catch(e){const code=e.code?.split('/').at(-1);message(code==='not-found'?'만료되었거나 이미 사용한 코드예요. 연인에게 새 초대 코드를 받아주세요.':code==='resource-exhausted'||code==='too-many-requests'?'요청이 많아요. 잠시 후 다시 시도해주세요.':code==='network-request-failed'||code==='unavailable'||code==='request-timeout'?'인터넷 연결을 확인하고 다시 시도해주세요.':e.message||'처리하지 못했어요. 잠시 후 다시 시도해주세요.',true);}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);controls();}}
 function choose(next){mode=next;clear();display(currentCouple);}

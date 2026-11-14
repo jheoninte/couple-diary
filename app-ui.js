@@ -28,7 +28,7 @@ function uiIcon(name) {
         let confirmCallback = null; // 확인 모달 콜백
         let anniversaries = [];
         let selectedAnniversaryIcon = '🎉'; // 기념일 아이콘
-        let currentTheme = 'pink';
+        let currentTheme = 'rose';
         let appTitle = '우리의 공간';
         let myDisplayName='나', partnerDisplayName='파트너';
         // Default names are placeholders and follow the language; nicknames the user typed are shown exactly as written.
@@ -79,15 +79,15 @@ function uiIcon(name) {
         function selectTheme(btn, theme) {
             document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            currentTheme = theme;
-            
-            // 즉시 테마 적용
             applyTheme(theme);
         }
 
+        // Accent-only themes (buttons and interactive points). Unknown/old theme ids fall back to the default.
+        const THEMES=['blue','rose','purple','teal','coral','sage','orange','burgundy','sand','navy'];
         function applyTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            try{localStorage.setItem('appTheme',theme);}catch{}
+            currentTheme = THEMES.includes(theme) ? theme : 'rose';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            try{localStorage.setItem('appTheme',currentTheme);}catch{}
         }
 
         function updateAppTitle(title) {
@@ -96,8 +96,16 @@ function uiIcon(name) {
         }
 
         // 설정 관련 함수
+        // 나의 공간 is a full-screen tab like the others (not a sheet).
+        function setSettingsTab(active) {
+            document.getElementById('settingsModal').classList.toggle('active', active);
+            const nav = document.querySelector('.nav-settings');
+            nav?.classList.toggle('active', active);
+            if (active) { nav?.setAttribute('aria-current','page'); document.querySelectorAll('.tab-btn').forEach(b => {b.classList.remove('active');b.removeAttribute('aria-current');}); }
+            else nav?.removeAttribute('aria-current');
+        }
         function openSettings() {
-            document.getElementById('settingsModal').classList.add('active');
+            setSettingsTab(true);
             
             // 현재 선택된 내 아이콘 표시
             document.querySelectorAll('.icon-selector .icon-btn').forEach(btn => {
@@ -110,9 +118,7 @@ function uiIcon(name) {
             // 현재 테마 표시
             document.querySelectorAll('.theme-btn').forEach(btn => {
                 btn.classList.remove('selected');
-                if (btn.onclick.toString().includes(`'${currentTheme}'`)) {
-                    btn.classList.add('selected');
-                }
+                btn.classList.toggle('selected', btn.dataset.themeId === currentTheme);
             });
             
             // 현재 제목 표시
@@ -133,13 +139,10 @@ function uiIcon(name) {
             
             // 기념일 리스트 렌더링
             renderAnniversaryList();
-            focusModal('settingsModal','.settings-close');
+            document.getElementById('settingsModal').scrollTop = 0;
         }
 
-        function closeSettings() {
-            document.getElementById('settingsModal').classList.remove('active');
-            restoreModalFocus('settingsModal');
-        }
+        function closeSettings() { setSettingsTab(false); }
 
         function selectMyIcon(btn, icon) {
             const selector = btn.parentElement;
@@ -868,6 +871,7 @@ function uiIcon(name) {
 
         // 탭 전환
         function switchTab(tabName, btnElement) {
+            closeSettings();
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => {b.classList.remove('active');b.removeAttribute('aria-current');});
             
@@ -945,6 +949,8 @@ async function addPhotos(files) {
 }
 function renderWeekdays(){fmt.weekdays('short').forEach((name,index)=>{const cell=document.querySelectorAll('.weekdays .weekday')[index];if(cell)cell.textContent=name;});}
 renderWeekdays();
+// Every message disappears on its own after 2.5s; nothing stays on screen.
+function flashMessage(el){el.classList.add('show');clearTimeout(el._hideTimer);el._hideTimer=setTimeout(()=>el.classList.remove('show'),2500);}
 window.diaryUI={
     photoBusy:false,
     // Re-renders everything generated in JavaScript after the language changes; markup in index.html is handled by the DOM translator.
@@ -974,13 +980,12 @@ window.diaryUI={
         if(selectedDate)displayDateEntries(selectedDate);
         if(document.getElementById('settingsModal').classList.contains('active'))renderAnniversaryList();
     },
-    status(message,kind='info'){const el=document.getElementById('syncStatus');el.textContent=message;el.dataset.kind=kind;},
+    status(message,kind='info'){const el=document.getElementById('syncStatus');el.textContent=message;el.dataset.kind=kind;flashMessage(el);},
     saved(date){selectedDate=date;switchTab('calendar',document.querySelector('.tab-btn'));displayDateEntries(date);document.querySelector('.entries-panel')?.scrollIntoView?.({block:'start'});},
     closeSettings, cancelAnniversaryForm, displayDateEntries
 };
 
 Object.assign(window,{showConfirmModal,closeConfirmModal,closeConfirmModalOnOutside,selectTheme,applyTheme,updateAppTitle,openSettings,closeSettings,selectMyIcon,updateDaysTogether,saveSettings,init,addDemoData,updateStats,renderCalendar,prevMonth,nextMonth,selectDate,selectAnniversaryIcon,renderAnniversaryList,calculateDday,showAddAnniversaryForm,cancelAnniversaryForm,saveAnniversary,deleteAnniversary,updateUpcomingAnniversary,displayDateEntries,getCommentDisplayInfo,renderDiaryCard,setupCommentEventListeners,selectMood,updateCharCount,setupAutosave,showAutosaveIndicator,saveDiary,resetForm,editEntry,deleteEntry,getEntryCollectionByType,toggleLike,toggleCommentInput,addComment,displayPhotoPreviews,removePhoto,setupDragAndDrop,updateMemories,openModal,closeModal,editComment,saveCommentEdit,cancelCommentEdit,deleteComment,searchDiaries,goToSearchResult,goToWrite,goToWriteWithDate,switchTab,persistDraft,openEditor,addPhotos});
-document.getElementById('settingsModal').addEventListener('click',event=>{if(event.target.id==='settingsModal')closeSettings();});
 document.addEventListener('keydown',event=>{
     if(document.querySelector('dialog[open]'))return;
     const modal=document.querySelector('.modal.active')||document.querySelector('.confirm-modal.active')||document.querySelector('.settings-modal.active');
