@@ -44,10 +44,12 @@ async function initializeNative() {
     async showBanner() {
       if (!permission) return;
       // Reserve 60 points above bottom navigation. Never place a banner over the tab bar.
+      const navHeight = document.querySelector('.tab-nav')?.getBoundingClientRect().height || 82;
+      document.documentElement.style.setProperty('--native-nav-space', `${navHeight}px`);
       document.documentElement.style.setProperty('--native-ad-space', '60px');
       try {
         await sdk.AdMob.showBanner({ adId: NATIVE_CONFIG.bannerId, isTesting: NATIVE_CONFIG.testAds,
-          adSize: sdk.BannerAdSize.BANNER, position: sdk.BannerAdPosition.BOTTOM_CENTER, margin: 82 });
+          adSize: sdk.BannerAdSize.BANNER, position: sdk.BannerAdPosition.BOTTOM_CENTER, margin: Math.ceil(navHeight + 8) });
       } catch (e) { document.documentElement.style.setProperty('--native-ad-space', '0px'); throw e; }
     },
     async hideBanner() { document.documentElement.style.setProperty('--native-ad-space', '0px'); await sdk?.AdMob.removeBanner(); },
@@ -60,5 +62,13 @@ async function initializeNative() {
       await sdk.AdMob.showInterstitial();
     }
   };
+  const footer = document.querySelector('.app-footer');
+  if (footer) {
+    const button = document.createElement('button');
+    button.className = 'text-button'; button.textContent = '광고 개인정보 설정';
+    button.onclick = () => window.diaryAdConsent.privacy().catch(() =>
+      window.diaryUI?.status('광고 개인정보 설정을 열지 못했습니다. 잠시 후 다시 시도해주세요.', 'error'));
+    footer.append(document.createElement('br'), button);
+  }
   window.dispatchEvent(new Event('diary:native-ready'));
 }

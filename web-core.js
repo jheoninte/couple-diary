@@ -1,5 +1,5 @@
 // Pure helpers shared by the UI and regression tests. No Firebase or DOM side effects.
-export const LIMITS = Object.freeze({content: 20000, comment: 1000, photos: 3, imageBytes: 2 * 1024 * 1024});
+export const LIMITS = Object.freeze({content: 20000, comment: 1000, photos: 3, imageBytes: 512 * 1024});
 export function localDate(date = new Date()) {
     return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }

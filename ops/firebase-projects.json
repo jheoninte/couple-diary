@@ -1,0 +1,41 @@
+{
+  "production": {
+    "projectId": "couple-diary-75157",
+    "projectNumber": "681335251233",
+    "firestoreLocation": "asia-northeast1",
+    "storageBucket": "couple-diary-75157.firebasestorage.app",
+    "storageLocation": "US-CENTRAL1",
+    "storageSoftDeleteSeconds": 604800,
+    "billingEnabled": true
+  },
+  "staging": {
+    "projectId": "couple-diary-comino-staging",
+    "projectNumber": "532300754240",
+    "webAppId": "1:532300754240:web:efa91ae578b14b20091ea5",
+    "billingEnabled": true,
+    "backendProvisioned": true,
+    "firestoreLocation": "asia-northeast1",
+    "storageLocation": "ASIA-NORTHEAST1",
+    "storageBucket": "couple-diary-comino-staging.firebasestorage.app",
+    "functionsRegion": "asia-northeast3",
+    "deployedFunctions": [
+      "diary",
+      "accountDeletion",
+      "appleBilling",
+      "appleNotifications"
+    ],
+    "scheduledJobsEnabled": false,
+    "appleBillingEnvironment": "Sandbox"
+  },
+  "budget": {
+    "monthlyAmount": 10000,
+    "currencyCode": "KRW",
+    "scopeProjects": [
+      "681335251233",
+      "532300754240"
+    ],
+    "verifiedApplied": true,
+    "spendCapEnabled": false
+  },
+  "verifiedDate": "2026-11-14"
+}

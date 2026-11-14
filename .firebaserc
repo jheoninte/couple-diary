@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "production": "couple-diary-75157",
+    "staging": "couple-diary-comino-staging"
+  }
+}

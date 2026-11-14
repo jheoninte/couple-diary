@@ -1,0 +1,3 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {normalizeInviteCode,formatInviteCode} from '../invite-code.js';
+test('pasted invitation accepts grouped, spaced and lowercase codes',()=>{for(const code of ['abcd1234efab5678','ABCD-1234-EFAB-5678','ABCD 1234 EFAB 5678'])assert.equal(normalizeInviteCode(code),'ABCD1234EFAB5678');assert.equal(formatInviteCode('ABCD1234EFAB5678'),'ABCD-1234-EFAB-5678');});
+test('invalid or ambiguous input cannot silently join a different space',()=>{for(const code of ['ABCD1234','ABCD1234EFAB5678ffff','ABCD1234EFAB567G','one ABCD1234EFAB5678 two'])assert.throws(()=>normalizeInviteCode(code));});

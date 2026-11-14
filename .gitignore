@@ -17,3 +17,9 @@ ios/App/CapApp-SPM/.build/
 *.p8
 *.p12
 *.mobileprovision
+
+functions/.secret.local
+.superpowers/
+
+.backups/
+*.backup.json

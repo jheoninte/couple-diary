@@ -6,24 +6,20 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <script src="/first-run.js"></script>
     <title>우리의 공간 - 커플 다이어리</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
 
     <meta name="theme-color" content="#fcfbf9" />
-    <link rel="stylesheet" href="app-design.css" />
+    <link rel="stylesheet" href="app-design.css" /><link rel="stylesheet" href="design-refresh.css" />
     <link rel="stylesheet" href="monetization.css?v=20261114-plus" />
-  </head>
+  <script type="module" src="i18n.js"></script>
+</head>
   <body class="diary-page">
     <div id="authGate" class="auth-gate" role="status">
-      <p id="loadingMessage">로그인과 기록을 확인하고 있습니다…</p>
-      <button onclick="location.reload()">다시 시도</button
-      ><a href="login.html" id="gateLoginLink">로그인 화면으로</a>
+      <span class="startup-heart" aria-hidden="true">♡</span><h1>우리의 공간</h1><p id="loadingMessage">우리의 이야기를 준비하고 있어요</p>
+      <div id="startupRecovery" hidden><button onclick="location.reload()">다시 시도</button><a href="login.html" id="gateLoginLink">로그인 화면으로</a></div>
     </div>
+    <script>setTimeout(function(){var gate=document.getElementById('authGate');if(gate&&!gate.hidden){document.getElementById('loadingMessage').textContent='연결이 지연되고 있어요. 인터넷 연결을 확인해주세요.';document.getElementById('startupRecovery').hidden=false;}},15000);</script>
     <div id="syncStatus" role="status" aria-live="polite">연결 중…</div>
 
     <dialog id="trashDialog">
@@ -105,8 +101,10 @@
           </button>
         </div>
 
+        <div class="language-setting"><label for="languageSelect">언어</label><select id="languageSelect" data-language-picker aria-label="언어"></select><p>이 기기에만 적용됩니다. 일기와 댓글은 번역되지 않습니다.</p></div>
         <nav class="account-tools" aria-label="계정 메뉴">
-          <a href="couple-connect.html"
+          <a id="accountDeletionLink" href="account-delete.html">계정 삭제</a>
+          <a id="coupleConnectionLink" href="couple-connect.html"
             >커플 연결 관리
             <svg
               class="ui-icon"
@@ -717,7 +715,7 @@
         <div class="journal-intro">
           <div>
             <p class="eyebrow">LITTLE MOMENTS, BIG LOVE</p>
-            <h2>함께 쌓아가는,<br />우리의 하루<span>.</span></h2>
+            <h2>오늘도,<br />너와 나의 이야기<span>.</span></h2>
             <p class="intro-description">
               오늘의 마음도, 오래 기억하고 싶은 순간도.
             </p>
@@ -1060,5 +1058,5 @@
       <a href="licenses.html">공휴일 데이터·오픈소스 안내</a>
     </footer>
     <script type="module" src="app-ui.js?v=20261114-plus"></script>
-  </body>
+  <script type="module" src="page-links.js"></script></body>
 </html>

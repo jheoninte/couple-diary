@@ -144,7 +144,8 @@ onAuthStateChanged(auth,async user=>{
         if(!initial.coupleId){location.replace(pageURL('couple-connect.html'));return;}
         session={uid:user.uid,coupleId:initial.coupleId,archive:!!archiveId};ui.session(session);couple=await api.getCouple(session.coupleId);
         window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
-        document.querySelector('.account-tools a').href=pageURL('couple-connect.html');
+        document.getElementById('coupleConnectionLink').href=pageURL('couple-connect.html');
+        document.getElementById('accountDeletionLink').href=pageURL('account-delete.html');
         if(!couple)throw Error('일기장을 찾을 수 없습니다.');
         if(session.archive){document.querySelector('.quick-write-btn').hidden=true;document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.settings-btn').hidden=true;}
         stops.push(api.watchCouple(session.coupleId,value=>{
@@ -153,5 +154,5 @@ onAuthStateChanged(auth,async user=>{
         },fail));
         if(!session.archive)stops.push(api.watchUser(value=>{if(value.coupleId!==session.coupleId){ui.persistDraft();location.replace(pageURL('couple-connect.html'));}},fail));
         subscribeEntries();
-    }catch(e){fail(e);document.getElementById('loadingMessage').textContent='기록을 준비하지 못했습니다. 잠시 후 다시 시도해주세요.';}
+    }catch(e){fail(e);document.getElementById('startupRecovery').hidden=false;document.getElementById('loadingMessage').textContent='기록을 준비하지 못했습니다. 잠시 후 다시 시도해주세요.';}
 });

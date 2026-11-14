@@ -1,49 +1,38 @@
-# 우리의 공간 · 커플 다이어리 웹
+> **Claude 인수인계:** 현재 작업은 `codex/ios-foundation` 브랜치에 있습니다. 마지막 TestFlight는 2026111403이며, 다국어 현지화는 진행 중입니다. 재개 전 [인수인계 문서](docs/CLAUDE_HANDOFF.md)를 읽어주세요.
 
-각자 계정으로 연결해 일기·기분·사진·댓글·기념일을 공유하는 웹앱입니다. 2026-11-14 웹 안정화 작업에서 저장 구조와 권한 검증을 다시 구성했습니다. iOS 프로젝트는 아직 추가하지 않았습니다.
+# 우리의 공간 · 커플 다이어리
 
-**현재 변경은 로컬 구현과 에뮬레이터 검증 단계이며 운영 사이트에는 배포하지 않았습니다.** 새 화면은 Cloud Functions와 새 규칙이 필요하므로 HTML만 GitHub Pages에 올리면 동작하지 않습니다.
+각자 이메일 계정으로 연결해 일기·기분·댓글·기념일을 공유하는 앱입니다. Vite 웹앱을 Capacitor iOS 프로젝트에 포함합니다.
 
-- 변경 사항과 후속 사양: [docs/WEB_STATUS.md](docs/WEB_STATUS.md)
-- 광고·구독 요금 및 미연결 항목: [docs/MONETIZATION.ko.md](docs/MONETIZATION.ko.md). 월 2,900원·연 24,900원 요금 안내와 사진 권한 검사는 반영했으나 실제 PG·광고 송출은 아직 연결되지 않았습니다. PG 연결 전 운영 배포하지 않습니다.
-- 설치·배포·기존 데이터 이전: [FIREBASE_GUIDE.md](FIREBASE_GUIDE.md)
-- 최초 진단(수정 전 기준): [audit/REVIEW.ko.md](audit/REVIEW.ko.md)
+- 무료: 텍스트 기록, 기존 사진 조회. iOS에서는 동의 상태와 빈도 제한을 적용한 배너·전면 광고.
+- **우리의 공간 Plus**: 월 **4,900원**, 연 **39,900원**. 한 명이 구독하면 현재 연결된 두 사람에게 사진 업로드·앨범·광고 제거를 제공합니다. 실제 결제 금액은 App Store 상품 가격을 표시합니다.
+- 사진: 기기에서 긴 변 1,440px·목표 256KiB·최대 512KiB로 압축. 1인 일 6회·월 90회 업로드 예약, 일기당 최대 3장.
 
-## 개발과 검증
+**현재는 로컬 개발 복구본이며 운영 배포·App Store 제출을 하지 않았습니다.** Apple 서버 키·상품 등록과 실기기 검증 전에는 결제가 비활성입니다. 광고는 Google 공식 테스트 ID를 사용합니다. 정책 페이지는 초안입니다. 계정 삭제는 앱 내 접수 후 COMINO가 수동 처리하며 [운영 절차](docs/ACCOUNT_DELETION.md)를 따릅니다.
 
-Node.js 22와 Java 21 이상이 필요합니다. 개발용 에뮬레이터는 실제 Firebase 프로젝트와 분리된 `demo-couple-diary`만 사용합니다.
+## 실행
 
-```powershell
+Node.js 22와 Java 21 이상을 준비합니다. `.nvmrc`는 22입니다.
+
+```sh
 npm ci
 npm --prefix functions ci
 npm test
 npm run check
+npm run build
 npm run test:emulator
 ```
 
-브라우저로 시험하려면 `npm run emulators` 실행 후 아래 주소를 엽니다.
+로컬 앱: `npm run build` 후 `npm run emulators`를 실행하고 `http://127.0.0.1:5500/login.html?emulator=1`에 접속합니다. 반드시 `?emulator=1`을 유지하세요. 해당 플래그 없이 실행한 앱은 현재 소스에 설정된 실제 Firebase 프로젝트를 사용합니다. 에뮬레이터는 `demo-couple-diary`를 사용합니다.
 
-```text
-http://127.0.0.1:5000/login.html?emulator=1
+```sh
+npm run ios:sync
+npm run ios:open
+npm run ios:release-check
 ```
 
-에뮬레이터 테스트를 이미 실행 중인 서버에 연결하려면 `node --test tests/emulator.cjs`를 사용합니다. `npm run test:emulator`는 에뮬레이터가 꺼진 상태에서 시작하는 명령입니다. 계정·기록은 테스트용이며 운영 계정을 사용하지 않습니다.
+macOS와 Xcode가 필요합니다. iOS 프로젝트가 처음부터 있으므로 `cap add ios`를 다시 실행할 필요는 없습니다. `ios:release-check`는 아직 남아 있는 출시 요건을 표시하고 실패합니다.
 
-이 작업 환경에는 `.tools/java`에 테스트용 JRE가 준비되어 있으며 실행 스크립트가 우선 사용합니다. 다른 환경에서는 Java 21을 설치하고 `JAVA_HOME`을 설정하세요. 첫 실행에는 Firebase 에뮬레이터 다운로드가 필요합니다.
+상세 구현·검증 결과: [WEB_STATUS](docs/WEB_STATUS.md) · 배포 준비: [Firebase 가이드](FIREBASE_GUIDE.md) · 광고·구독·비용: [MONETIZATION](docs/MONETIZATION.ko.md).
 
-## 구성
-
-| 파일 | 역할 |
-|---|---|
-| `index.html`, `app-ui.js`, `web-improvements.css` | 기존 화면, 안전한 렌더링, 날짜·초안·사진 편집 |
-| `firebase-config.js` | Firebase 연결과 로컬 에뮬레이터 전환 |
-| `firebase-sync.js`, `diary-api.js` | 인증, 실시간 조회, 저장 상태, 서버 명령 |
-| `login.js`, `couple-connect.js` | 가입·로그인·초대·연결 해제·보관함 |
-| `functions/service.cjs` | 트랜잭션과 작성자·버전 검증 |
-| `functions/index.cjs` | 인증된 callable, 이전 작업, 사진 토큰 철회·재시도 |
-| `firestore.rules`, `storage.rules` | 회원·보관함·사진 접근 제한 |
-| `tests` | 회귀 검사와 Firebase 에뮬레이터 통합 검사 |
-
-일기는 `couples/{id}/entries/{uid}_{date}` 문서로 나눴습니다. 댓글은 안정적인 ID를 가지며 해당 일기 트랜잭션에서 갱신합니다. 문서 크기를 제한하기 위해 일기 20,000자, 사진 3장, 댓글 200개/각 1,000자, 기념일 30개로 제한합니다.
-
-공휴일은 2025–2035년 데이터를 포함합니다. `npm run update:holidays`로 다시 생성할 수 있으며 임시공휴일·선거일은 정부 발표에 맞춰 별도 갱신해야 합니다. 데이터 출처와 라이선스는 [licenses.html](licenses.html)에 있습니다.
+스테이징 빌드는 `.env.staging`의 별도 공개 설정과 `npm run build:staging`을 사용합니다. 운영 백업·이전과 사용자가 정한 월 10,000원 예산 알림 준비는 [Firebase 운영 절차](docs/FIREBASE_OPERATIONS.md)를 참고하세요. 실제 클라우드 적용은 계정 연결 후 진행합니다.

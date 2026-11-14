@@ -2,16 +2,14 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script src="/first-run.js"></script>
     <title>로그인 - 우리의 공간</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
 
     <meta name="theme-color" content="#fcfbf9" />
-    <link rel="stylesheet" href="app-design.css" />
-  </head>
+    <link rel="stylesheet" href="app-design.css" /><link rel="stylesheet" href="design-refresh.css" />
+  <script type="module" src="i18n.js"></script>
+</head>
   <body class="auth-page">
     <div class="auth-layout">
       <section class="auth-story">
@@ -110,7 +108,7 @@
           <button class="tab" onclick="showSignup()">회원가입</button>
         </div>
 
-        <div class="error-message" id="errorMessage"></div>
+        <div class="error-message" id="errorMessage" role="alert" aria-live="polite" tabindex="-1"></div>
 
         <!-- 로그인 폼 -->
         <form id="loginForm">
@@ -119,7 +117,7 @@
             <input
               type="email"
               class="form-input"
-              id="loginEmail"
+              id="loginEmail" inputmode="email" autocapitalize="none" spellcheck="false"
               autocomplete="email"
               required
               placeholder="example@email.com"
@@ -136,6 +134,7 @@
               placeholder="비밀번호를 입력하세요"
             />
           </div>
+          <button type="button" class="password-toggle" data-passwords="loginPassword" aria-pressed="false">비밀번호 보기</button>
           <button type="submit" class="submit-btn" id="loginBtn">로그인</button
           ><button type="button" class="text-button" id="resetPasswordBtn">
             비밀번호 재설정
@@ -149,7 +148,7 @@
             <input
               type="email"
               class="form-input"
-              id="signupEmail"
+              id="signupEmail" inputmode="email" autocapitalize="none" spellcheck="false"
               autocomplete="email"
               required
               placeholder="example@email.com"
@@ -160,7 +159,7 @@
             <input
               type="password"
               class="form-input"
-              id="signupPassword"
+              id="signupPassword" minlength="8"
               autocomplete="new-password"
               required
               placeholder="최소 8자 이상"
@@ -173,12 +172,13 @@
             <input
               type="password"
               class="form-input"
-              id="signupPasswordConfirm"
+              id="signupPasswordConfirm" minlength="8"
               autocomplete="new-password"
               required
               placeholder="비밀번호를 다시 입력하세요"
             />
           </div>
+          <p class="field-hint">8자 이상 입력해주세요. 다른 서비스와 다른 비밀번호를 권장해요.</p><button type="button" class="password-toggle" data-passwords="signupPassword signupPasswordConfirm" aria-pressed="false">비밀번호 보기</button>
           <button type="submit" class="submit-btn" id="signupBtn">
             회원가입
           </button>
@@ -188,6 +188,14 @@
             코드를 보내면 두 사람의 기록을 함께 볼 수 있습니다. 비밀번호는
             공유하지 마세요.
           </div>
+        </form>
+        <form id="resetForm" style="display:none">
+          <h2 class="reset-heading">비밀번호를 잊으셨나요?</h2>
+          <p class="field-hint">가입한 이메일로 비밀번호를 다시 설정하는 링크를 보내드릴게요.</p>
+          <div class="form-group"><label class="form-label" for="resetEmail">이메일</label><input type="email" class="form-input" id="resetEmail" inputmode="email" autocapitalize="none" spellcheck="false" autocomplete="email" placeholder="example@email.com" required></div>
+          <button type="submit" class="submit-btn" id="resetSendBtn">재설정 이메일 보내기</button>
+          <p id="resetHint" class="field-hint" hidden>메일이 없다면 스팸함과 입력한 주소를 확인해주세요. 링크는 가장 최근에 받은 메일을 이용해주세요.</p>
+          <button type="button" class="text-button" id="backToLoginBtn">로그인으로 돌아가기</button>
         </form>
       </div>
     </div>
@@ -208,5 +216,5 @@
       두 사람만 나누는, 안전한 기록
     </p>
     <script type="module" src="login.js?v=20261114-design"></script>
-  </body>
+  <script type="module" src="page-links.js"></script><label class="welcome-language">🌐 <select data-language-picker aria-label="언어"></select></label></body>
 </html>

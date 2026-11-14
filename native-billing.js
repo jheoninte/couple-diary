@@ -1,4 +1,5 @@
 import './native-bridge.js';
+import { syncTransactions } from './billing-sync.js';
 import { functions } from './firebase-config.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-functions.js';
 import { NATIVE_CONFIG } from './native-config.js';
@@ -13,7 +14,13 @@ if (window.diaryNativeReady) {
     await window.diaryStore.finish({ transactionId: result.transactionId });
     if (version === revision) await window.diaryMonetization?.refresh(true);
   }
-  async function sync(rows, version) { for (const row of rows || []) await verify(row.signedTransaction, version); }
+  async function sync(rows, version) {
+    return syncTransactions(rows, signed => verify(signed, version), async () => {
+      if (version !== revision) return;
+      await remote('refresh');
+      if (version === revision) await window.diaryMonetization?.refresh(true);
+    });
+  }
   window.diaryBilling = {
     available: false, products: {}, busy: false,
     async buy(plan) {
@@ -32,8 +39,8 @@ if (window.diaryNativeReady) {
       if (this.busy || !context || !this.available) return;
       const version = revision; this.busy = true; changed();
       try {
-        await sync((await window.diaryStore.restore()).transactions, version);
-        await remote('refresh'); await window.diaryMonetization?.refresh(true);
+        const failures = await sync((await window.diaryStore.restore()).transactions, version);
+        if (failures.length) throw Error('일부 구매를 복원하지 못했습니다. 구매 당시 앱 계정으로 로그인했는지 확인해주세요.');
       } finally { this.busy = false; changed(); }
     },
     manage: () => window.diaryStore.manage(),
@@ -55,7 +62,6 @@ if (window.diaryNativeReady) {
       window.diaryBilling.products = Object.fromEntries(Object.entries(NATIVE_CONFIG.products).map(([plan, id]) => [plan, products.find(product => product.id === id)]));
       window.diaryBilling.available = true; changed();
       await sync((await window.diaryStore.pending()).transactions, version);
-      if (version === revision) { await remote('refresh'); await window.diaryMonetization?.refresh(true); }
     } catch { /* Restore remains available; never manufacture a successful purchase. */ }
   }
   window.addEventListener('diary:context', event => {

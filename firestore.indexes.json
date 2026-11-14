@@ -1,8 +1,45 @@
 {
-  "indexes": [{"collectionGroup":"entries","queryScope":"COLLECTION","fields":[{"fieldPath":"author","order":"ASCENDING"},{"fieldPath":"date","order":"DESCENDING"}]}],
+  "indexes": [
+    {
+      "collectionGroup": "entries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "author",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
   "fieldOverrides": [
-    {"collectionGroup":"entries","fieldPath":"content","indexes":[]},
-    {"collectionGroup":"entries","fieldPath":"comments","indexes":[]},
-    {"collectionGroup":"entries","fieldPath":"photos","indexes":[]}
+    {
+      "collectionGroup": "entries",
+      "fieldPath": "content",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "entries",
+      "fieldPath": "comments",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "entries",
+      "fieldPath": "photos",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "photoReservations",
+      "fieldPath": "expiresAt",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    }
   ]
 }

@@ -10,27 +10,11 @@
     "rules": "storage.rules"
   },
   "hosting": {
-    "public": ".",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       ".*",
-      "**/node_modules/**",
-      "functions/**",
-      "tests/**",
-      "scripts/**",
-      "audit/**",
-      "docs/**",
-      "*.md",
-      "*.pdf",
-      "*.rules",
-      "*lock*",
-      "package.json",
-      "firestore.indexes.json",
-      "storage.cors.json",
-      "ios/**",
-      "dist/**",
-      "capacitor.config.json",
-      "vite.config.js"
+      "**/node_modules/**"
     ],
     "headers": [
       {
@@ -70,11 +54,16 @@
       "port": 5001
     },
     "hosting": {
-      "port": 5000
+      "port": 5500
     },
     "ui": {
       "enabled": true
     },
     "singleProjectMode": true
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true
+    }
   }
 }

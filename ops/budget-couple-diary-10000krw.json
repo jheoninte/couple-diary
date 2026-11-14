@@ -1,0 +1,38 @@
+{
+  "displayName": "COMINO Couple Diary monthly 10000 KRW",
+  "budgetFilter": {
+    "projects": [
+      "projects/681335251233",
+      "projects/532300754240"
+    ],
+    "calendarPeriod": "MONTH"
+  },
+  "amount": {
+    "specifiedAmount": {
+      "currencyCode": "KRW",
+      "units": "10000"
+    }
+  },
+  "thresholdRules": [
+    {
+      "thresholdPercent": 0.5,
+      "spendBasis": "CURRENT_SPEND"
+    },
+    {
+      "thresholdPercent": 0.8,
+      "spendBasis": "CURRENT_SPEND"
+    },
+    {
+      "thresholdPercent": 1,
+      "spendBasis": "CURRENT_SPEND"
+    },
+    {
+      "thresholdPercent": 1,
+      "spendBasis": "FORECASTED_SPEND"
+    }
+  ],
+  "notificationsRule": {
+    "disableDefaultIamRecipients": false,
+    "enableProjectLevelRecipients": true
+  }
+}

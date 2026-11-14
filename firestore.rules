@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
+    function signedIn() { return request.auth != null && !exists(/databases/$(database)/documents/accountDeletions/$(request.auth.uid)); }
     function owns(uid) { return signedIn() && request.auth.uid == uid; }
     function member(c) { return signedIn() && (c.user1 == request.auth.uid || c.user2 == request.auth.uid); }
     function active(c, cid) {

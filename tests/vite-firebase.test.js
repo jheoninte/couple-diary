@@ -1,0 +1,2 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import config from '../vite.config.js';
+test('versioned source modules use the same Firebase SDK as firebase-config',()=>{const plugin=config({mode:'development'}).plugins.find(p=>p.name==='bundle-firebase');const source="import {signInWithEmailAndPassword} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';";assert.match(plugin.transform(source,'/source/login.js?v=20261114-design'),/from 'firebase\/auth'/);});

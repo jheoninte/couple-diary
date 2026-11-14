@@ -9,10 +9,13 @@
     "emulators": "node scripts/emulators.cjs",
     "test:emulator": "node scripts/emulators.cjs --test",
     "update:holidays": "node scripts/update-holidays.js",
-    "build": "vite build",
+    "build": "npm run locales:build && vite build && node scripts/check-web-bundle.cjs",
     "ios:sync": "npm run build && cap sync ios && node scripts/configure-ios.cjs",
     "ios:open": "cap open ios",
-    "ios:release-check": "node scripts/release-check.cjs"
+    "ios:release-check": "node scripts/release-check.cjs",
+    "build:staging": "npm run locales:build && vite build --mode staging && node scripts/check-web-bundle.cjs",
+    "firebase:ops": "node scripts/firebase-operations.cjs",
+    "locales:build": "node scripts/build-locales.cjs"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.6.2",
@@ -29,5 +32,8 @@
     "@capacitor-community/admob": "^8.3.0",
     "@capacitor/core": "^8.6.2",
     "@capacitor/ios": "^8.6.2"
+  },
+  "engines": {
+    "node": ">=22 <25"
   }
 }

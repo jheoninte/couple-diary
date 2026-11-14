@@ -1,7 +1,7 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() { return request.auth != null; }
+    function signedIn() { return request.auth != null && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('status', 'active') != 'deleting'; }
     function activeMember(cid) {
       let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
       return signedIn() && couple.status == 'active'
@@ -19,15 +19,16 @@ service firebase.storage {
     }
     function photoSubscription(cid, uid, filename) {
       let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
-      let permit = couple.get('photoPermits', {}).get(uid, {});
+      let permit = firestore.get(/databases/(default)/documents/couples/$(cid)/photoReservations/$(filename)).data;
       return couple.get('premiumUntil', 0) > request.time.toMillis()
-        && permit.get('filename', '') == filename && permit.get('expiresAt', 0) > request.time.toMillis();
+        && permit.uid == uid && permit.attached == false && permit.expiresAt > request.time.toMillis();
     }
     match /couples/{cid}/{uid}/{filename} {
       allow read: if activeMember(cid) || archiveOwner(cid, uid);
-      allow create: if signedIn() && request.auth.uid == uid && activeMember(cid) && photoSubscription(cid, uid, filename) && validImage();
-      allow update: if false;
-      allow delete: if signedIn() && request.auth.uid == uid && activeMember(cid);
+      allow create: if resource == null && signedIn() && request.auth.uid == uid && activeMember(cid) && photoSubscription(cid, uid, filename)
+        && validImage() && request.resource.contentType == 'image/jpeg';
+      // Prevent deletion and re-upload with the same reservation. Server owns lifecycle cleanup.
+      allow update, delete: if false;
     }
     function legacyPartner(uid) {
       let cid = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.coupleId;

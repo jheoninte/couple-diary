@@ -1,8 +1,11 @@
-import { auth, db, storage, functions } from './firebase-config.js';
+import { auth, db, storage, functions, pageURL } from './firebase-config.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-functions.js';
 import { doc, getDoc, getDocFromServer, collection, query, orderBy, limit, startAfter, where, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { ref, uploadBytes, getBlob, deleteObject } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
-export const call=async(action,data={})=>(await httpsCallable(functions,'diary',{timeout:['initialize','disconnect'].includes(action)?540000:20000})({action,...data})).data;
+export const call=async(action,data={})=>{
+    try{return (await httpsCallable(functions,'diary',{timeout:['initialize','disconnect'].includes(action)?540000:20000})({action,...data})).data;}
+    catch(error){if(error.details?.accountDeletion)location.replace(pageURL('account-delete.html'));throw error;}
+};
 export const getUser=async()=> (await getDoc(doc(db,'users',auth.currentUser.uid))).data()||{};
 export const getCouple=async id=>(await getDoc(doc(db,'couples',id))).data();
 export const getEntry=async(cid,date)=>(await getDocFromServer(doc(db,'couples',cid,'entries',`${auth.currentUser.uid}_${date}`))).data();
