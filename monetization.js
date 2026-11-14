@@ -30,7 +30,7 @@ dialog.innerHTML = `<button class="membership-close" aria-label="구독 안내 �
     <div id="nativeBillingActions" hidden><button id="restorePurchases" class="text-button">구매 복원</button><button id="manageSubscription" class="text-button">Apple 구독 관리</button></div>
     <p class="membership-terms" id="membershipRenewal"></p>
     <p class="membership-terms">사진은 자동 압축됩니다. 일기당 최대 3장, 1인 하루 업로드 6회·월 90회입니다. 실패한 업로드 예약도 한도에 포함될 수 있습니다.</p>
-    <p class="membership-terms"><a href="privacy.html">개인정보 처리방침</a> · <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/">이용약관</a></p>
+    <p class="membership-terms"><a href="https://www.comino.app/girl-privacy" target="_blank" rel="noopener noreferrer">개인정보 처리방침</a> · <a href="https://www.comino.app/girl-service" target="_blank" rel="noopener noreferrer">이용약관</a></p>
     <p class="membership-terms">구독이 끝나도 기존 일기와 사진은 계속 볼 수 있어요. 새 사진 첨부만 제한되며, 텍스트 기록은 계속 무료입니다.</p>`;
 document.body.append(dialog);
 const adBanner = document.createElement("aside");

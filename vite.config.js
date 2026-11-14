@@ -11,6 +11,6 @@ export default defineConfig(({mode}) => {
     if (!id.includes('node_modules') && id.split('?')[0].endsWith('.js')) return code.replace(/https:\/\/www\.gstatic\.com\/firebasejs\/[\d.]+\/firebase-([a-z-]+)\.js/g, 'firebase/$1');
   }}],
   build: { target: 'es2022', rollupOptions: { input: Object.fromEntries(
-    ['index', 'login', 'couple-connect', 'licenses', 'privacy', 'terms', 'account-delete', 'onboarding'].map(name => [name, resolve(import.meta.dirname, `${name}.html`)])) } }
+    ['index', 'login', 'couple-connect', 'licenses', 'account-delete', 'onboarding'].map(name => [name, resolve(import.meta.dirname, `${name}.html`)])) } }
 };
 });

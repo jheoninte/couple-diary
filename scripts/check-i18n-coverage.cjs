@@ -15,7 +15,7 @@ const root = path.resolve(__dirname, '..');
 const {JSDOM} = require(path.join(root, 'node_modules/jsdom'));
 
 // Pages whose text is legal wording. Machine translation is not acceptable there; they stay Korean until reviewed.
-const PENDING_REVIEW = new Set(['privacy.html', 'terms.html', 'licenses.html']);
+const PENDING_REVIEW = new Set(['licenses.html']);
 // Modules that never reach the screen or are covered elsewhere.
 // firebase-environment.js only throws developer configuration errors, never user-facing text.
 const SKIP_JS = new Set(['holidays-data.js', 'firebase-environment.js']);
