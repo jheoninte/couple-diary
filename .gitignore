@@ -17,3 +17,12 @@ ios/App/CapApp-SPM/.build/
 *.p8
 *.p12
 *.mobileprovision
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+build/
+*.ipa
+*.dSYM.zip
