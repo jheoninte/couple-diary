@@ -124,6 +124,16 @@ for (const [, value] of holidays.matchAll(/": "([^"]+)"/g)) {
 }
 if (!known('{name} (대체공휴일)')) add(missing, 'holidays-data.js', '{name} (대체공휴일)');
 
+// Cloud Functions errors reach the screen as error.message, which the DOM translator looks up.
+// deletion-worker.cjs is administrator-only and never returns its messages to the app.
+const SERVER_SKIP = new Set(['deletion-worker.cjs', 'legacy-migration.cjs']);
+for (const file of fs.readdirSync(path.join(root, 'functions')).filter(name => name.endsWith('.cjs') && !SERVER_SKIP.has(name))) {
+  const source = fs.readFileSync(path.join(root, 'functions', file), 'utf8');
+  for (const [, message] of source.matchAll(/(?:fail|DomainError|HttpsError)\(\s*'[a-z-]+'\s*,\s*'([^']+)'/g)) {
+    if (hangul.test(message) && !known(message)) add(missing, `functions/${file}`, message);
+  }
+}
+
 if (process.argv.includes('--keys')) {
   const keys = new Set();
   for (const [file, set] of missing) if (!PENDING_REVIEW.has(file)) for (const key of set) keys.add(key);

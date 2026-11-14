@@ -116,3 +116,12 @@ TestFlight 1403에는 현지화가 포함되어 있지 않습니다. main 머지
 - `scripts/configure-ios.cjs`가 ko/en/ja `InfoPlist.strings`(앱 이름, 추적 허용 문구)와 `CFBundleLocalizations`를 설정. 앱 이름: 한국어 우리의 공간(유지), 일본어 今日のふたり, 영어 Our Diary로 확정. 다른 언어 번역(Our Space 계열)은 다음 업데이트에서 이름을 맞출 것. App Store Connect 표기와 맞는지 확인.
 - `scripts/release-ios.sh`: Mac에서 실행하는 운영 빌드·아카이브·TestFlight 업로드. 운영 Firebase(couple-diary-75157) + AdMob 실광고(`VITE_ADMOB_LIVE_ADS=true`). 서버 배포·심사 제출은 하지 않음. 빌드 후 스테이징 설정/실광고 ID 포함 여부를 점검.
 - 심사 제출 전 사람이 확인할 것: 운영 Functions(`functions/package.json` main=billing-enabled.cjs)/appleBilling/규칙/인덱스 배포 상태, 실기기 StoreKit Sandbox 구매·복원, App Store Connect의 약관(EULA) 링크, IAP 심사 제출 상태.
+
+## 현지화 업데이트 (2026-11-14, Claude 이어서)
+
+- 서버(Cloud Functions) 사용자 노출 오류 39개를 `locales/messages-server.tsv`로 18개 언어 추가 (483 keys). 서버 코드는 그대로 두고 클라이언트 DOM 번역기가 `error.message`를 조회한다. `deletion-worker.cjs`(관리자 전용)·`legacy-migration.cjs`(내부 오류→일반 메시지)는 제외.
+- `npm run locales:coverage`가 `functions/*.cjs`의 `fail/DomainError/HttpsError` 한국어 메시지도 검사한다.
+- 언어 선택기 버그 수정: `<option>`이 번역 보호 대상이라 '시스템 언어 사용' 문구가 첫 언어로 고정되고 `#languageSelect`만 값이 동기화되던 문제. `i18n.js`의 `syncPickers()`가 모든 `[data-language-picker]`를 갱신. `tests/i18n-picker.test.js` 추가.
+- `npm test` 64/64, `npm run build:staging` 통과. 로컬 Vite에서 de/ar 전환 시 선택기·RTL 확인 (에뮬레이터 없이 온보딩 화면만).
+- 남은 일 목록의 5번 중 '서버 오류 메시지'는 처리됨. Auth 메일 언어는 `firebase-config.js`에서 `auth.languageCode`를 언어 변경 이벤트로 갱신하는 것을 확인했으나 실제 메일 수신 검증은 안 함.
+- 참고: `i18n` 청크가 약 770kB(전체 18개 언어 카탈로그 포함). 언어별 지연 로딩은 미착수.
