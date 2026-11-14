@@ -942,11 +942,7 @@
           <!-- 사진 업로드 -->
           <div class="form-section">
             <div class="section-title">사진 (최대 3장)</div>
-            <button
-              type="button"
-              class="photo-upload-area"
-              onclick="if(window.diaryMonetization?.requestPhoto())document.getElementById('photoInput').click()"
-            >
+            <div class="photo-upload-area" role="group" aria-label="사진 추가">
               <span class="upload-icon"
                 ><svg
                   class="ui-icon"
@@ -966,12 +962,23 @@
                   >Plus 구독으로 사진 최대 3장</small
                 ></span
               >
-            </button>
+              <div class="photo-source-actions">
+                <button type="button" class="photo-source-btn" data-photo-source="camera">사진 찍기</button>
+                <button type="button" class="photo-source-btn" data-photo-source="album">앨범에서 선택</button>
+              </div>
+            </div>
+            <!-- Album: the system photo picker (no library permission needed). Camera: opens the camera directly. -->
             <input
               type="file"
               id="photoInput"
               accept="image/jpeg,image/png,image/webp"
               multiple
+            />
+            <input
+              type="file"
+              id="cameraInput"
+              accept="image/*"
+              capture="environment"
             />
             <div class="photo-preview" id="photoPreview"></div>
           </div>

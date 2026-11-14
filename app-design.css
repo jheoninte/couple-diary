@@ -991,8 +991,33 @@ h3 {
   color: var(--text-light);
   margin-top: 4px;
 }
-#photoInput {
+#photoInput,
+#cameraInput {
   display: none;
+}
+.photo-upload-area {
+  flex-wrap: wrap;
+}
+.photo-source-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.photo-source-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #dedede);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text-dark, #222);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.photo-source-btn:active {
+  background: var(--soft-pink);
+  border-color: var(--primary);
 }
 .photo-preview {
   display: grid;

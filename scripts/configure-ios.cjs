@@ -7,6 +7,10 @@ if(!/^ca-app-pub-\d{16}~\d{10}$/.test(appId||''))throw Error('Invalid AdMob app 
 set('GADApplicationIdentifier','string',appId);
 set('NSUserTrackingUsageDescription','string','광고 제공과 광고 성과 측정을 위해 기기 식별자를 사용할 수 있습니다. 허용하지 않아도 일기를 이용할 수 있습니다.');
 set('ITSAppUsesNonExemptEncryption','bool','false');
+set('NSCameraUsageDescription','string','일기에 첨부할 사진을 촬영하기 위해 카메라를 사용합니다.');
+set('NSPhotoLibraryUsageDescription','string','일기에 첨부할 사진을 앨범에서 선택하기 위해 사진 보관함에 접근합니다.');
+// iPhone only: no iPad layout or screenshots are maintained.
+spawnSync('/usr/libexec/PlistBuddy',['-c','Delete :UISupportedInterfaceOrientations~ipad',plist]);
 set('CFBundleDevelopmentRegion','string','ko');
 const sb=root+'/Base.lproj/Main.storyboard';fs.writeFileSync(sb,fs.readFileSync(sb,'utf8').replace('customClass="CAPBridgeViewController" customModule="Capacitor"','customClass="DiaryViewController" customModule="App"'));
 const p='ios/App/App.xcodeproj/project.pbxproj';let s=fs.readFileSync(p,'utf8');
@@ -17,13 +21,14 @@ for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift'].entries()
  s=s.replace('504EC3071FED79650016851F /* AppDelegate.swift */,',`504EC3071FED79650016851F /* AppDelegate.swift */,\n${file} /* ${name} */,`);
  s=s.replace('504EC3081FED79650016851F /* AppDelegate.swift in Sources */,',`504EC3081FED79650016851F /* AppDelegate.swift in Sources */,\n${build} /* ${name} in Sources */,`);
 }
+s=s.replace(/TARGETED_DEVICE_FAMILY = "1,2";/g,'TARGETED_DEVICE_FAMILY = 1;');
 fs.writeFileSync(p,s);
 
 // Localized app name and tracking prompt (ko/en/ja). Other languages fall back to English.
 const strings={
- ko:{CFBundleDisplayName:'우리의 공간',NSUserTrackingUsageDescription:'광고 제공과 광고 성과 측정을 위해 기기 식별자를 사용할 수 있습니다. 허용하지 않아도 일기를 이용할 수 있습니다.'},
- en:{CFBundleDisplayName:'Our Diary',NSUserTrackingUsageDescription:'Your device identifier may be used to show ads and measure ad performance. You can use the diary even if you choose not to allow it.'},
- ja:{CFBundleDisplayName:'今日のふたり',NSUserTrackingUsageDescription:'広告の表示と広告効果の測定のために、端末の識別子を使用することがあります。許可しなくても日記はご利用いただけます。'}
+ ko:{CFBundleDisplayName:'우리의 공간',NSUserTrackingUsageDescription:'광고 제공과 광고 성과 측정을 위해 기기 식별자를 사용할 수 있습니다. 허용하지 않아도 일기를 이용할 수 있습니다.',NSCameraUsageDescription:'일기에 첨부할 사진을 촬영하기 위해 카메라를 사용합니다.',NSPhotoLibraryUsageDescription:'일기에 첨부할 사진을 앨범에서 선택하기 위해 사진 보관함에 접근합니다.'},
+ en:{CFBundleDisplayName:'Our Diary',NSUserTrackingUsageDescription:'Your device identifier may be used to show ads and measure ad performance. You can use the diary even if you choose not to allow it.',NSCameraUsageDescription:'The camera is used to take photos to attach to your diary entries.',NSPhotoLibraryUsageDescription:'Your photo library is used to choose photos to attach to your diary entries.'},
+ ja:{CFBundleDisplayName:'今日のふたり',NSUserTrackingUsageDescription:'広告の表示と広告効果の測定のために、端末の識別子を使用することがあります。許可しなくても日記はご利用いただけます。',NSCameraUsageDescription:'日記に添付する写真を撮影するためにカメラを使用します。',NSPhotoLibraryUsageDescription:'日記に添付する写真をアルバムから選ぶために写真ライブラリにアクセスします。'}
 };
 {
  let proj=fs.readFileSync(p,'utf8');

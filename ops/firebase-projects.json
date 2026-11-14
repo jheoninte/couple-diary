@@ -6,7 +6,23 @@
     "storageBucket": "couple-diary-75157.firebasestorage.app",
     "storageLocation": "US-CENTRAL1",
     "storageSoftDeleteSeconds": 604800,
-    "billingEnabled": true
+    "billingEnabled": true,
+    "functionsRegion": "asia-northeast3",
+    "backendProvisioned": true,
+    "deployedFunctions": [
+      "diary",
+      "accountDeletion",
+      "appleBilling",
+      "appleNotifications"
+    ],
+    "scheduledJobsEnabled": false,
+    "appleBillingEnvironment": "Production (Sandbox fallback for App Review/TestFlight)",
+    "appleNotificationsUrl": "https://asia-northeast3-couple-diary-75157.cloudfunctions.net/appleNotifications",
+    "legacyMigration": "couple_1774401459601 migrated to v2 on 2026-11-14 (11 entries, 1 photo); backup in .backups/before-migration-couple_1774401459601",
+    "reviewAccounts": [
+      "reviewer.20261114@comino.app",
+      "reviewer.partner.20261114@comino.app"
+    ]
   },
   "staging": {
     "projectId": "couple-diary-comino-staging",

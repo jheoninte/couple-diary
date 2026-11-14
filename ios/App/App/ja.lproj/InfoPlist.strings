@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "今日のふたり";
+"NSUserTrackingUsageDescription" = "広告の表示と広告効果の測定のために、端末の識別子を使用することがあります。許可しなくても日記はご利用いただけます。";
+"NSCameraUsageDescription" = "日記に添付する写真を撮影するためにカメラを使用します。";
+"NSPhotoLibraryUsageDescription" = "日記に添付する写真をアルバムから選ぶために写真ライブラリにアクセスします。";

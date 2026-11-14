@@ -1,4 +1,5 @@
 import { NATIVE_CONFIG } from './native-config.js';
+import { ensureTrackingDecision } from './ads-tracking.js';
 // Only the bundled iOS app imports native packages. A regular browser keeps working.
 if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.getPlatform() === 'ios') {
   document.body.classList.add('native-ios');
@@ -27,7 +28,8 @@ async function initializeNative() {
       let info = await sdk.AdMob.requestConsentInfo();
       if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await sdk.AdMob.showConsentForm();
       permission = info.canRequestAds === true;
-      if (permission) await sdk.AdMob.initialize({ initializeForTesting: NATIVE_CONFIG.testAds });
+      // Order: consent (UMP) → tracking permission (ATT) → ad SDK. Ads still load as non-personalized if tracking is declined.
+      if (permission) { await ensureTrackingDecision(sdk.AdMob); await sdk.AdMob.initialize({ initializeForTesting: NATIVE_CONFIG.testAds }); }
     })().catch(() => { permission = false; started = null; });
     await started;
   }
@@ -36,7 +38,7 @@ async function initializeNative() {
     async privacy() {
       await consent(); if (!sdk) return;
       permission = false; window.dispatchEvent(new Event('diary:ad-consent-changed'));
-      try { await sdk.AdMob.showPrivacyOptionsForm(); permission = (await sdk.AdMob.requestConsentInfo()).canRequestAds === true; }
+      try { await sdk.AdMob.showPrivacyOptionsForm(); permission = (await sdk.AdMob.requestConsentInfo()).canRequestAds === true; if (permission) await ensureTrackingDecision(sdk.AdMob); }
       finally { window.dispatchEvent(new Event('diary:ad-consent-changed')); }
     }
   };

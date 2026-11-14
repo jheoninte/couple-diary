@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "Our Diary";
+"NSUserTrackingUsageDescription" = "Your device identifier may be used to show ads and measure ad performance. You can use the diary even if you choose not to allow it.";
+"NSCameraUsageDescription" = "The camera is used to take photos to attach to your diary entries.";
+"NSPhotoLibraryUsageDescription" = "Your photo library is used to choose photos to attach to your diary entries.";

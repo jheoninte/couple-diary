@@ -647,7 +647,7 @@ function uiIcon(name) {
             document.getElementById('diaryContent').value = '';
             editingRevision=0;
             document.getElementById('photoPreview').innerHTML = '';
-            document.getElementById('photoInput').value = '';
+            document.getElementById('photoInput').value = '';document.getElementById('cameraInput').value = '';
             document.getElementById('charCount').textContent = '0';
             uploadedPhotos = [];
             selectedMoodValue = '';
@@ -693,6 +693,9 @@ function uiIcon(name) {
 
         // 사진 업로드 처리
         document.getElementById('photoInput').addEventListener('change',e=>addPhotos(e.target.files));
+        document.getElementById('cameraInput').addEventListener('change',e=>addPhotos(e.target.files));
+        // Camera opens the capture UI directly; album opens the system photo picker. Both keep the Plus gate.
+        document.querySelectorAll('[data-photo-source]').forEach(button=>button.addEventListener('click',()=>{if(window.diaryMonetization&&!window.diaryMonetization.requestPhoto())return;document.getElementById(button.dataset.photoSource==='camera'?'cameraInput':'photoInput').click();}));
         function displayPhotoPreviews() {
     const preview=document.getElementById('photoPreview');preview.replaceChildren();
     uploadedPhotos.forEach((photo,index)=>{
@@ -938,7 +941,7 @@ async function addPhotos(files) {
         }
         if(editorDate!==targetDate)throw Error('날짜가 변경되었습니다. 사진을 다시 첨부해주세요.');
         uploadedPhotos.push(...prepared);displayPhotoPreviews();persistDraft();
-    }catch(e){alert(e.message);}finally{window.diaryUI.photoBusy=false;document.getElementById('photoInput').value='';}
+    }catch(e){alert(e.message);}finally{window.diaryUI.photoBusy=false;document.getElementById('photoInput').value='';document.getElementById('cameraInput').value='';}
 }
 function renderWeekdays(){fmt.weekdays('short').forEach((name,index)=>{const cell=document.querySelectorAll('.weekdays .weekday')[index];if(cell)cell.textContent=name;});}
 renderWeekdays();

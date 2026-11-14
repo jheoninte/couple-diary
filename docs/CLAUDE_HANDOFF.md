@@ -125,3 +125,7 @@ TestFlight 1403에는 현지화가 포함되어 있지 않습니다. main 머지
 - `npm test` 64/64, `npm run build:staging` 통과. 로컬 Vite에서 de/ar 전환 시 선택기·RTL 확인 (에뮬레이터 없이 온보딩 화면만).
 - 남은 일 목록의 5번 중 '서버 오류 메시지'는 처리됨. Auth 메일 언어는 `firebase-config.js`에서 `auth.languageCode`를 언어 변경 이벤트로 갱신하는 것을 확인했으나 실제 메일 수신 검증은 안 함.
 - 참고: `i18n` 청크가 약 770kB(전체 18개 언어 카탈로그 포함). 언어별 지연 로딩은 미착수.
+
+## 운영 전환 (2026-11-14 밤, Claude)
+
+운영 `couple-diary-75157`에 서버를 배포하고 기존 1쌍을 v2로 이전, 운영 리뷰 계정 생성. 결제는 Production 우선 + Sandbox 재검증(심사·TestFlight). 카메라/앨범 버튼·권한 문구, ATT 팝업(`ads-tracking.js`), iPhone 전용. 세부·남은 일: `docs/RELEASE_READINESS.ko.md`. 새 운영 빌드는 아직 TestFlight에 올리지 않았다.
