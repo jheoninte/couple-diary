@@ -1,0 +1,33 @@
+{
+  "name": "couple-diary-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.*",
+    "dev": "node scripts/serve.cjs",
+    "check": "node scripts/check.cjs",
+    "emulators": "node scripts/emulators.cjs",
+    "test:emulator": "node scripts/emulators.cjs --test",
+    "update:holidays": "node scripts/update-holidays.js",
+    "build": "vite build",
+    "ios:sync": "npm run build && cap sync ios && node scripts/configure-ios.cjs",
+    "ios:open": "cap open ios",
+    "ios:release-check": "node scripts/release-check.cjs"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
+    "date-holidays": "^3.39.1",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^15.36.0",
+    "jsdom": "^26.1.0",
+    "vite": "^7.3.8"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.7"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "^8.3.0",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2"
+  }
+}

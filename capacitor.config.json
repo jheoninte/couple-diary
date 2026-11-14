@@ -1,0 +1,6 @@
+{
+  "appId": "com.interest.couplediary",
+  "appName": "우리의 공간",
+  "webDir": "dist",
+  "ios": { "contentInset": "never", "preferredContentMode": "mobile" }
+}

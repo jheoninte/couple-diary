@@ -1,348 +1,212 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>로그인 - 우리의 공간</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #FFF8F0 0%, #FFE5EC 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .login-container {
-            background: white;
-            border-radius: 24px;
-            padding: 40px;
-            max-width: 420px;
-            width: 100%;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .logo-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-        }
-
-        .logo-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 32px;
-            font-weight: 700;
-            color: #FF6B9D;
-            margin-bottom: 8px;
-        }
-
-        .logo-subtitle {
-            font-size: 14px;
-            color: #9A8F97;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 32px;
-            background: #FFF8F0;
-            padding: 4px;
-            border-radius: 12px;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            background: transparent;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            color: #9A8F97;
-            transition: all 0.2s;
-        }
-
-        .tab.active {
-            background: white;
-            color: #FF6B9D;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #2D3142;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #FFE5EC;
-            border-radius: 12px;
-            font-size: 15px;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #FF6B9D;
-            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #FF6B9D, #C06C84);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(255, 107, 157, 0.3);
-        }
-
-        .submit-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .error-message {
-            background: #FFE5EC;
-            color: #E63946;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .error-message.show {
-            display: block;
-        }
-
-        .signup-info {
-            margin-top: 16px;
-            padding: 16px;
-            background: #FFF8F0;
-            border-radius: 12px;
-            font-size: 13px;
-            color: #9A8F97;
-            line-height: 1.6;
-        }
-
-        .signup-info strong {
-            color: #FF6B9D;
-        }
-
-        #signupForm {
-            display: none;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid white;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body>
-    <div class="login-container">
+    <meta name="theme-color" content="#fcfbf9" />
+    <link rel="stylesheet" href="app-design.css" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-layout">
+      <section class="auth-story">
+        <a class="auth-brand" href="login.html"
+          ><span class="brand-symbol"
+            ><svg
+              class="ui-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.65"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+              /></svg
+          ></span>
+          우리의 공간</a
+        >
+        <div class="auth-story-copy">
+          <p class="eyebrow">A JOURNAL, JUST FOR TWO</p>
+          <h2>평범한 하루도,<br />우리라서 특별해.</h2>
+          <p>서로의 하루를 나누고<br />함께한 순간을 오래 간직하세요.</p>
+        </div>
+        <div class="journal-art" aria-hidden="true">
+          <div class="paper paper-back">
+            <span>YOU & ME</span
+            ><svg
+              class="ui-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.65"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+              />
+            </svg>
+          </div>
+          <div class="paper paper-front">
+            <span>OUR LITTLE MOMENTS</span>
+            <div class="paper-heart">
+              <svg
+                class="ui-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.65"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+                />
+              </svg>
+            </div>
+            <i></i><i></i><i></i><em>every day, with you.</em>
+          </div>
+          <span class="paper-stamp">MADE<br />FOR TWO</span>
+        </div>
+        <p class="auth-story-footer">
+          작은 기록이 모여, 우리의 이야기가 됩니다.
+        </p>
+      </section>
+      <div class="login-container">
         <div class="logo">
-            <div class="logo-icon">💕</div>
-            <h1 class="logo-title">우리의 공간</h1>
-            <p class="logo-subtitle">매일의 순간을 함께 기록해요</p>
+          <div class="logo-icon">
+            <svg
+              class="ui-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.65"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+              />
+            </svg>
+          </div>
+          <p class="eyebrow">WELCOME TO OUR SPACE</p>
+          <h1 class="logo-title">우리의 이야기를 이어가요</h1>
+          <p class="logo-subtitle">둘만의 소중한 기록이 기다리고 있어요.</p>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showLogin()">로그인</button>
-            <button class="tab" onclick="showSignup()">회원가입</button>
+          <button class="tab active" onclick="showLogin()">로그인</button>
+          <button class="tab" onclick="showSignup()">회원가입</button>
         </div>
 
         <div class="error-message" id="errorMessage"></div>
 
         <!-- 로그인 폼 -->
         <form id="loginForm">
-            <div class="form-group">
-                <label class="form-label">이메일</label>
-                <input type="email" class="form-input" id="loginEmail" required placeholder="example@email.com">
-            </div>
-            <div class="form-group">
-                <label class="form-label">비밀번호</label>
-                <input type="password" class="form-input" id="loginPassword" required placeholder="비밀번호를 입력하세요">
-            </div>
-            <button type="submit" class="submit-btn" id="loginBtn">로그인</button>
+          <div class="form-group">
+            <label class="form-label" for="loginEmail">이메일</label>
+            <input
+              type="email"
+              class="form-input"
+              id="loginEmail"
+              autocomplete="email"
+              required
+              placeholder="example@email.com"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">비밀번호</label>
+            <input
+              type="password"
+              class="form-input"
+              id="loginPassword"
+              autocomplete="current-password"
+              required
+              placeholder="비밀번호를 입력하세요"
+            />
+          </div>
+          <button type="submit" class="submit-btn" id="loginBtn">로그인</button
+          ><button type="button" class="text-button" id="resetPasswordBtn">
+            비밀번호 재설정
+          </button>
         </form>
 
         <!-- 회원가입 폼 -->
         <form id="signupForm">
-            <div class="form-group">
-                <label class="form-label">이메일</label>
-                <input type="email" class="form-input" id="signupEmail" required placeholder="example@email.com">
-            </div>
-            <div class="form-group">
-                <label class="form-label">비밀번호</label>
-                <input type="password" class="form-input" id="signupPassword" required placeholder="최소 6자 이상">
-            </div>
-            <div class="form-group">
-                <label class="form-label">비밀번호 확인</label>
-                <input type="password" class="form-input" id="signupPasswordConfirm" required placeholder="비밀번호를 다시 입력하세요">
-            </div>
-            <button type="submit" class="submit-btn" id="signupBtn">회원가입</button>
-            
-            <div class="signup-info">
-                💡 <strong>중요!</strong> 한 분이 먼저 회원가입을 하시고, 다른 분은 <strong>같은 이메일과 비밀번호</strong>로 로그인하시면 같은 다이어리를 공유할 수 있습니다.
-            </div>
+          <div class="form-group">
+            <label class="form-label" for="signupEmail">이메일</label>
+            <input
+              type="email"
+              class="form-input"
+              id="signupEmail"
+              autocomplete="email"
+              required
+              placeholder="example@email.com"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signupPassword">비밀번호</label>
+            <input
+              type="password"
+              class="form-input"
+              id="signupPassword"
+              autocomplete="new-password"
+              required
+              placeholder="최소 8자 이상"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signupPasswordConfirm"
+              >비밀번호 확인</label
+            >
+            <input
+              type="password"
+              class="form-input"
+              id="signupPasswordConfirm"
+              autocomplete="new-password"
+              required
+              placeholder="비밀번호를 다시 입력하세요"
+            />
+          </div>
+          <button type="submit" class="submit-btn" id="signupBtn">
+            회원가입
+          </button>
+
+          <div class="signup-info">
+            각자 자신의 이메일로 가입해주세요. 한 사람이 일기장을 만들고 초대
+            코드를 보내면 두 사람의 기록을 함께 볼 수 있습니다. 비밀번호는
+            공유하지 마세요.
+          </div>
         </form>
+      </div>
     </div>
-
-    <script type="module">
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-
-        // Firebase 설정
-        const firebaseConfig = {
-            apiKey: "AIzaSyBoEZNvbq_eYne5y1Ejm5IwLa2WDHfdYQs",
-            authDomain: "couple-diary-75157.firebaseapp.com",
-            projectId: "couple-diary-75157",
-            storageBucket: "couple-diary-75157.firebasestorage.app",
-            messagingSenderId: "681335251233",
-            appId: "1:681335251233:web:fb6865fe60058287fd9e60"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // 탭 전환
-        window.showLogin = () => {
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('signupForm').style.display = 'none';
-            document.querySelectorAll('.tab')[0].classList.add('active');
-            document.querySelectorAll('.tab')[1].classList.remove('active');
-            hideError();
-        };
-
-        window.showSignup = () => {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('signupForm').style.display = 'block';
-            document.querySelectorAll('.tab')[0].classList.remove('active');
-            document.querySelectorAll('.tab')[1].classList.add('active');
-            hideError();
-        };
-
-        // 에러 메시지 표시
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.textContent = message;
-            errorEl.classList.add('show');
-        }
-
-        function hideError() {
-            document.getElementById('errorMessage').classList.remove('show');
-        }
-
-        // 로그인
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('loginBtn');
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span>';
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                // 로그인 성공 - 메인 페이지로 이동
-                window.location.href = 'index.html';
-            } catch (error) {
-                let message = '로그인에 실패했습니다.';
-                if (error.code === 'auth/user-not-found') {
-                    message = '등록되지 않은 이메일입니다.';
-                } else if (error.code === 'auth/wrong-password') {
-                    message = '비밀번호가 올바르지 않습니다.';
-                } else if (error.code === 'auth/invalid-email') {
-                    message = '올바른 이메일 형식이 아닙니다.';
-                }
-                showError(message);
-                btn.disabled = false;
-                btn.textContent = '로그인';
-            }
-        });
-
-        // 회원가입
-        document.getElementById('signupForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('signupBtn');
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
-
-            if (password !== passwordConfirm) {
-                showError('비밀번호가 일치하지 않습니다.');
-                return;
-            }
-
-            if (password.length < 6) {
-                showError('비밀번호는 최소 6자 이상이어야 합니다.');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span>';
-
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                // 회원가입 성공 - 메인 페이지로 이동
-                window.location.href = 'index.html';
-            } catch (error) {
-                let message = '회원가입에 실패했습니다.';
-                if (error.code === 'auth/email-already-in-use') {
-                    message = '이미 사용 중인 이메일입니다.';
-                } else if (error.code === 'auth/invalid-email') {
-                    message = '올바른 이메일 형식이 아닙니다.';
-                } else if (error.code === 'auth/weak-password') {
-                    message = '비밀번호가 너무 약합니다. 최소 6자 이상 입력하세요.';
-                }
-                showError(message);
-                btn.disabled = false;
-                btn.textContent = '회원가입';
-            }
-        });
-    </script>
-</body>
+    <p class="auth-privacy">
+      <svg
+        class="ui-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.65"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="5" y="10" width="14" height="11" rx="3" />
+        <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3" />
+      </svg>
+      두 사람만 나누는, 안전한 기록
+    </p>
+    <script type="module" src="login.js?v=20261114-design"></script>
+  </body>
 </html>

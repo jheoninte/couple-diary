@@ -1,0 +1,43 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function activeMember(cid) {
+      let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
+      return signedIn() && couple.status == 'active'
+        && (couple.user1 == request.auth.uid || couple.user2 == request.auth.uid)
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.coupleId == cid;
+    }
+    function archiveOwner(cid, uid) {
+      let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
+      return signedIn() && request.auth.uid == uid && couple.status == 'closed'
+        && (couple.user1 == uid || couple.user2 == uid);
+    }
+    function validImage() {
+      return request.resource.size <= 512 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+    function photoSubscription(cid, uid, filename) {
+      let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
+      let permit = couple.get('photoPermits', {}).get(uid, {});
+      return couple.get('premiumUntil', 0) > request.time.toMillis()
+        && permit.get('filename', '') == filename && permit.get('expiresAt', 0) > request.time.toMillis();
+    }
+    match /couples/{cid}/{uid}/{filename} {
+      allow read: if activeMember(cid) || archiveOwner(cid, uid);
+      allow create: if signedIn() && request.auth.uid == uid && activeMember(cid) && photoSubscription(cid, uid, filename) && validImage();
+      allow update: if false;
+      allow delete: if signedIn() && request.auth.uid == uid && activeMember(cid);
+    }
+    function legacyPartner(uid) {
+      let cid = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.coupleId;
+      let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
+      return activeMember(cid) && (couple.user1 == uid || couple.user2 == uid);
+    }
+    match /photos/{uid}/{filename} {
+      allow read: if signedIn() && (request.auth.uid == uid || legacyPartner(uid));
+      allow write: if false;
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

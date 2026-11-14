@@ -1,209 +1,92 @@
-# 🔥 Firebase 연동 완료 가이드
+# 웹 v2 Firebase 설정·이전·배포 가이드
 
-## 📦 파일 목록
+이 문서는 2026-11-14 웹 수정본용입니다. 예전의 자기 `users` 문서만 허용하는 규칙과 단일 커플 문서 저장 방식은 더 이상 사용하지 않습니다. 이번 작업에서는 운영 서버에 배포하거나 운영 계정·기록을 변경하지 않았습니다.
 
-지금까지 만든 파일 4개를 GitHub에 업로드하세요:
+**구독 준비본 주의:** 현재 새 사진은 서버가 확인한 Plus 구독에만 허용됩니다. 토스 PG·실제 결제 발급 경로·광고 계정은 아직 연결되지 않았고 결제 버튼은 비활성화되어 있습니다. 이 상태로 운영 배포하면 신규 사진을 결제해 해금할 수 없으므로, [광고·구독 준비 상태](docs/MONETIZATION.ko.md)의 PG 연결 작업을 먼저 완료하세요. 무료 텍스트와 기존 사진 조회는 유지됩니다.
 
-1. **index.html** (기존 파일 - 그대로 유지)
-2. **login.html** (새로 만든 로그인 페이지)
-3. **firebase-config.js** (Firebase 설정 파일)
-4. **firebase-sync.js** (Firebase 동기화 스크립트)
+## 1. 로컬 격리 검증
 
----
+Node.js 22 및 Java 21 이상을 준비하고 다음을 실행합니다.
 
-## 📤 GitHub 업로드 방법
-
-1. https://github.com/jheoninte/couple-diary 접속
-2. `Add file` → `Upload files` 클릭
-3. 다음 3개 파일을 드래그:
-   - `login.html`
-   - `firebase-config.js`
-   - `firebase-sync.js`
-4. Commit message: `Add Firebase integration`
-5. `Commit changes` 클릭
-
----
-
-## ✏️ index.html 수정
-
-`index.html` 파일을 열어서 `<script>` 태그 **바로 앞**에 다음을 추가하세요:
-
-### 추가할 위치:
-`</body>` 태그 바로 위, `<script>` 태그 바로 앞
-
-### 추가할 코드:
-```html
-    <!-- Firebase SDK -->
-    <script type="module" src="firebase-sync.js"></script>
-    
-    <script>
+```powershell
+npm ci
+npm --prefix functions ci
+npm test
+npm run check
+npm run test:emulator
 ```
 
-**전체 구조 예시:**
-```html
-    <!-- 확인 팝업 모달 -->
-    <div class="confirm-modal" id="confirmModal">
-        ...
-    </div>
+브라우저 점검: `npm run emulators`를 실행한 뒤 `http://127.0.0.1:5000/login.html?emulator=1`에서 테스트 계정을 만듭니다. 이때만 `firebase-config.js`가 `demo-couple-diary`와 로컬 에뮬레이터를 사용합니다. 실제 계정이나 실제 프로젝트 데이터는 사용하지 않습니다.
 
-    <!-- Firebase SDK -->
-    <script type="module" src="firebase-sync.js"></script>
+에뮬레이터 밖에서 `npm run dev`로 정적 파일만 제공할 수도 있지만, **`?emulator=1` 없이 접속하면 설정된 실제 Firebase 프로젝트를 가리킵니다.** 운영 데이터 테스트용으로 사용하지 마세요.
 
-    <script>
-        // 전역 변수
-        let currentDate = new Date();
-        ...
-    </script>
-</body>
-</html>
+## 2. 별도 스테이징 준비
+
+1. 운영과 분리된 Firebase 프로젝트에서 Authentication 이메일/비밀번호, Firestore, Storage, Cloud Functions를 준비합니다. 기본 Functions 리전은 `asia-northeast3`입니다. Firestore/Storage의 기존 위치와 비용도 확인합니다.
+2. 스테이징 브랜치 또는 배포용 복사본의 `firebase-config.js`를 해당 프로젝트의 공개 웹 설정으로 교체합니다. 버킷명은 Firebase 콘솔의 실제 값을 사용합니다. 서비스 계정 비밀키를 프런트엔드에 넣지 않습니다.
+3. Functions 실행 서비스 계정에 필요한 Firestore 및 Storage 객체 접근 권한이 있어야 합니다. Storage 규칙의 Firestore 조회에 필요한 서비스 연결 권한도 Firebase 안내에 따라 설정합니다.
+4. Functions와 예약 재시도 작업은 유료 플랜 및 관련 Google Cloud API가 필요할 수 있습니다. 예산 알림과 로그 보관을 설정합니다. 함수 인스턴스 제한은 일반 callable 10개입니다.
+5. Firebase Authentication의 승인 도메인과 재설정/인증 메일 템플릿을 설정합니다. 실제 메일 전달과 재설정 링크를 테스트합니다.
+
+## 3. 배포할 파일과 명령
+
+아래 명령의 `PROJECT_ID`는 배포 대상으로 확인한 프로젝트 ID로 바꿉니다. 로그인된 Google 계정의 권한을 먼저 확인합니다. 구형 정적 페이지를 계속 사용하는 도중 규칙을 바꾸면 저장이 차단되므로 운영 전환에는 짧은 점검 시간을 둡니다.
+
+```powershell
+npx firebase login
+npx firebase deploy --project PROJECT_ID --only functions,firestore,storage
+npx firebase deploy --project PROJECT_ID --only hosting
 ```
 
----
+Functions에는 인증된 `diary` callable과 `retryPhotoRevocation` 예약 함수가 포함됩니다. 예약 함수는 연결 해제 후 Storage 토큰 철회가 실패한 관계를 15분마다 재시도합니다. 예약 작업 실패 경보를 설정하세요.
 
-## 🔒 Firebase 보안 규칙 설정
+클라이언트 쓰기는 모두 서버 명령을 통해 처리하므로 **새 Functions와 규칙 없이 HTML만 GitHub Pages에 배포하면 안 됩니다.** 정적 화면은 기존 GitHub Pages에 유지할 수도 있지만 Functions·규칙·인덱스·CORS는 Firebase/Google Cloud에 별도 적용해야 합니다.
 
-Firebase Console에서 보안 규칙을 설정해야 합니다!
+`firebase.json`은 테스트·서버 소스·보고서·설정 문서·의존성을 호스팅에서 제외합니다. 다른 호스팅을 쓰면 동일한 제외 목록을 적용하세요. JavaScript와 HTML은 `no-cache`로 재검증하도록 설정했습니다.
 
-### 1. Firestore 보안 규칙
+## 4. Storage CORS
 
-1. https://console.firebase.google.com 접속
-2. 프로젝트 선택: `couple-diary-75157`
-3. 좌측 메뉴: `Firestore Database`
-4. 상단 탭: `규칙` 또는 `Rules`
-5. 다음 규칙으로 변경:
+새 화면은 토큰 URL을 저장하지 않고 인증된 Storage 요청으로 사진을 Blob으로 읽습니다. 실제 웹 출처가 버킷 CORS에 있어야 합니다.
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
+`storage.cors.json`의 허용 도메인을 실제 배포 출처와 맞춘 다음 인증된 Google Cloud CLI에서 실행합니다.
+
+```powershell
+gcloud storage buckets update gs://ACTUAL_BUCKET_NAME --cors-file=storage.cors.json
 ```
 
-6. `게시` 또는 `Publish` 클릭
+현재 파일에는 기존 GitHub Pages 도메인 및 기존 프로젝트의 Firebase Hosting 도메인이 들어 있습니다. 임의 출처 전체 허용으로 넓히지 마세요. 에뮬레이터의 사진 요청 성공이 운영 CORS 성공을 보증하지 않습니다.
 
-**설명**: 로그인한 사용자만 자신의 데이터에 접근 가능
+## 5. 기존 기록 이전
 
----
+운영 전환 전에 Firestore와 Storage를 별도로 백업하고 스테이징에서 복구를 확인합니다. 자동 이전 백업만을 유일한 복구 수단으로 삼지 마세요.
 
-### 2. Storage 보안 규칙
+새 화면에 로그인하면 `initialize` 명령이 현재 커플을 확인하고 필요한 경우 다음을 수행합니다.
 
-1. 좌측 메뉴: `Storage`
-2. 상단 탭: `규칙` 또는 `Rules`
-3. 다음 규칙으로 변경:
+1. 현재 사용자가 기존 커플의 실제 멤버인지 확인합니다.
+2. 기존 커플 문서를 서버 전용 `legacyBackups/{coupleId}`에 최초 한 번 보관합니다.
+3. `myEntries/{uid}/{date}`의 내용을 `couples/{id}/entries/{uid}_{date}`에 최초 한 번 복사합니다. 댓글에는 안정적인 ID를 붙입니다. UID가 명확하지 않은 구형 ‘나’ 댓글은 다른 사용자가 수정하지 못하도록 읽기용 작성자로 남깁니다.
+4. 기존 Firebase Storage URL을 같은 버킷의 `photos/{author}/...` 경로로 바꾸고 이전 다운로드 토큰을 교체합니다. 이는 과거의 복사된 사진 URL을 무효화하기 위한 동작입니다. 이미 내려받은 사진 파일은 철회할 수 없습니다.
+5. 모든 복사가 성공한 후에만 `schemaVersion:2`로 표시하고 커플 문서의 `myEntries`를 제거합니다. 원본은 서버 백업에 유지됩니다.
 
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /photos/{userId}/{filename} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
-      allow delete: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
-```
+중간에 실패하면 완료된 문서를 덮어쓰지 않고 다음 호출에서 이어서 처리합니다. 이전이 끝나기 전에는 새 서버 저장 명령을 허용하지 않습니다. 잘못된 날짜·다른 버킷·예상 외 사진 경로 등은 원본을 보존한 채 실패합니다. 이런 경우 임의로 빈 데이터로 초기화하지 말고 관리자가 백업을 확인해야 합니다.
 
-4. `게시` 또는 `Publish` 클릭
+매우 많은 파일은 540초 함수 시간 제한에 걸릴 수 있습니다. 이 경우 반복 호출로 이어서 처리하거나 관리자가 이전 작업을 나눠 실행합니다. 큰 운영 데이터는 사전 점검이 필요합니다.
 
-**설명**: 로그인한 사용자만 자신의 사진 업로드/다운로드/삭제 가능
+## 6. 운영 확인 순서
 
----
+- 서로 다른 두 계정으로 초대 수락과 동시 댓글·수정 동작을 확인합니다.
+- 로그아웃 후 다른 계정으로 전환했을 때 이전 화면과 초안이 보이지 않는지 확인합니다.
+- 자기 일기만 수정하고 자기 댓글만 수정·삭제할 수 있는지 확인합니다.
+- 브라우저를 새로고침해 기념일과 닉네임이 유지되는지 확인합니다.
+- 사진 업로드·조회·압축·업로드 실패 시 입력 보존·휴지통 복원을 확인합니다.
+- 연결 해제 후 두 사용자 포인터가 비워지고 자기 보관함만 읽을 수 있는지 확인합니다.
+- 연결 전 받은 사진 토큰 URL이 실제 운영 버킷에서 더 이상 통하지 않는지 확인합니다. 로컬 에뮬레이터는 토큰 메타데이터 교체 방식이 운영과 달라 로컬에만 별도 관리자 토큰 철회 처리가 있습니다.
+- 네트워크 끊김·한국 자정·다른 시간대·강제 종료 후 초안을 확인합니다.
+- 실제 iPhone Safari와 데스크톱 Chrome/Firefox에서 파일 선택·키보드·화면 크기·재로그인을 확인합니다.
+- 사진 일부 조회 실패가 표시되며 일기 저장이 기존 사진 경로를 삭제하지 않는지 확인합니다.
 
-## 🧪 테스트 방법
+## 7. 복구와 공개 전 남은 일
 
-### 1단계: 한 분이 회원가입
+v2 이전 후에는 예전 `index.html`만 다시 배포해 롤백할 수 없습니다. 예전 앱은 원본 커플 문서의 `myEntries`에 의존합니다. 장애 시 새 앱에서 쓰기를 중지하고 원본 백업과 v2 변경 기록을 함께 확인하여 복구 계획을 세워야 합니다. 과거 토큰을 무조건 복원해 이미 철회한 링크를 다시 열지 마세요.
 
-1. https://jheoninte.github.io/couple-diary/login.html 접속
-2. **회원가입** 탭 클릭
-3. 이메일과 비밀번호 입력 (예: `couple@example.com` / `password123`)
-4. **회원가입** 클릭
-5. 자동으로 `index.html`로 이동
-6. 일기를 몇 개 작성해보세요
-
-### 2단계: 다른 분도 같은 계정으로 로그인
-
-1. **다른 기기**나 **다른 브라우저**에서 접속
-2. https://jheoninte.github.io/couple-diary/login.html
-3. **같은 이메일과 비밀번호**로 로그인
-4. 첫 번째 사람이 쓴 일기가 보여야 합니다! ✨
-
-### 3단계: 실시간 동기화 테스트
-
-1. 두 기기를 나란히 놓고
-2. 한쪽에서 일기 작성
-3. 다른 쪽에서 자동으로 업데이트되는지 확인!
-
----
-
-## ✅ 작동하는 기능
-
-- ✅ 로그인/회원가입
-- ✅ 로그인 안 하면 메인 페이지 접근 불가
-- ✅ 일기 실시간 동기화
-- ✅ 사진 Firebase Storage 업로드
-- ✅ 댓글, 좋아요, 기념일 모두 동기화
-- ✅ 설정(테마, 아이콘) 동기화
-- ✅ 로그아웃 버튼 (우측 상단 🚪)
-
----
-
-## 🎯 주요 변경사항
-
-### Before (기존):
-- localStorage에 데이터 저장
-- 각자의 브라우저에만 저장
-- 서로 볼 수 없음
-
-### After (Firebase):
-- Firebase Firestore에 데이터 저장
-- 실시간 동기화
-- 같은 계정으로 로그인하면 같은 데이터 공유!
-
----
-
-## ⚠️ 중요 사항
-
-### 같은 계정 공유
-- **한 분이 회원가입**
-- **다른 분은 같은 계정으로 로그인**
-- 이렇게 해야 같은 데이터를 볼 수 있습니다!
-
-### 보안
-- 이메일과 비밀번호는 두 분만 아는 것으로 설정
-- 절대 다른 사람에게 공유하지 마세요
-
----
-
-## 🐛 문제 해결
-
-### 로그인 후 빈 화면만 보이는 경우
-1. F12 키를 눌러 개발자 도구 열기
-2. Console 탭에서 에러 메시지 확인
-3. 에러 메시지를 알려주세요
-
-### "permission-denied" 에러
-- Firebase 보안 규칙이 제대로 설정되었는지 확인
-- 위의 "Firebase 보안 규칙 설정" 부분 다시 확인
-
-### 실시간 동기화가 안 되는 경우
-- 두 분 모두 같은 계정으로 로그인했는지 확인
-- 새로고침(F5) 해보세요
-
----
-
-## 📞 도움이 필요하면
-
-에러 메시지나 문제 상황을 스크린샷으로 보내주세요!
-브라우저 콘솔(F12)의 에러 메시지도 함께 보내주시면 더 빠르게 해결할 수 있습니다.
-
----
-
-## 🎉 완성!
-
-이제 두 분이 어디서든 같은 다이어리를 공유할 수 있습니다!
-사랑스러운 추억을 함께 기록하세요! 💕
+계정 영구 삭제, 개인정보 처리방침, 사진 포함 백업/가져오기, 휴지통·원본 백업의 보관 기간은 아직 운영 정책과 구현을 마무리해야 합니다. 상세 우선순위는 [docs/WEB_STATUS.md](docs/WEB_STATUS.md)에 있습니다. 이 항목들과 스테이징 검증을 마친 뒤 운영 전환하는 것이 웹 버전의 다음 완료 기준입니다.
