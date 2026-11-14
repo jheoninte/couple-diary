@@ -155,6 +155,8 @@ body:has(dialog[open]) {
   min-height: 48px;
   background: var(--primary);
   color: white;
+}
+#membershipDialog > .save-btn:disabled {
   cursor: not-allowed;
 }
 .membership-terms {

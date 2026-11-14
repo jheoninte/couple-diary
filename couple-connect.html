@@ -12,7 +12,7 @@
   <body class="connect-page">
     <div class="container">
       <div class="header">
-        <a class="back-link" href="index.html#settings">‹ 뒤로</a>
+        <a class="back-link" href="index.html#settings" hidden>‹ 뒤로</a>
         <div class="header-icon">
           <svg
             class="ui-icon"
@@ -189,6 +189,17 @@
         <p>연결 해제 후에는 각자 자기 일기만 읽을 수 있습니다.</p>
         <div id="archiveList"></div>
       </section>
+    </div>
+    <div class="confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="confirm-content">
+        <div class="confirm-icon" aria-hidden="true">⚠️</div>
+        <h3 class="confirm-title" id="confirmTitle">연결 해제</h3>
+        <p class="confirm-message" id="confirmMessage">현재 공유 일기장을 보관할까요? 두 사람의 연결이 해제되고, 각자의 보관함에는 자신이 작성한 일기만 남아요.</p>
+        <div class="confirm-actions">
+          <button type="button" class="confirm-btn confirm-btn-cancel" id="confirmCancelBtn">취소</button>
+          <button type="button" class="confirm-btn confirm-btn-delete" id="confirmDeleteBtn">연결 해제</button>
+        </div>
+      </div>
     </div>
     <script type="module" src="couple-connect.js?v=20261114-design"></script>
   <script type="module" src="page-links.js"></script></body>

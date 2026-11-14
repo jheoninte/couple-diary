@@ -51,14 +51,15 @@ window.diaryActions={
     photoURL:api.photoURL,
     async openPhoto(path){try{window.openModal(await api.photoURL(path));}catch(e){ui.status('사진을 불러오지 못했습니다. 연결을 확인하고 다시 시도해주세요.','error');}},
     reloadEditor(){
-        const date=ui.editor().date;
-        if(!validDate(date)||!confirm('현재 초안을 서버의 최신 일기로 바꿀까요? 직전 초안은 이 기기에 복구용으로 남습니다.'))return;
-        ui.persistDraft();
-        return action('reloadEditor',null,async()=>{
-            const entry=await api.getEntry(session.coupleId,date);
-            if(entry)records.set(`${session.uid}_${date}`,entry);else records.delete(`${session.uid}_${date}`);
-            await render();ui.replaceEditor(date);return '최신 일기를 불러왔습니다. 필요하면 직전 초안을 복구할 수 있습니다.';
-        });
+        const date=ui.editor().date;if(!validDate(date))return;
+        window.showConfirmModal('서버의 최신 글 불러오기','현재 초안을 서버의 최신 일기로 바꿀까요? 직전 초안은 이 기기에 복구용으로 남습니다.',()=>{
+            ui.persistDraft();
+            return action('reloadEditor',null,async()=>{
+                const entry=await api.getEntry(session.coupleId,date);
+                if(entry)records.set(`${session.uid}_${date}`,entry);else records.delete(`${session.uid}_${date}`);
+                await render();ui.replaceEditor(date);return '최신 일기를 불러왔습니다. 필요하면 직전 초안을 복구할 수 있습니다.';
+            });
+        },'🔄','확인');
     },
     async saveDiary() {
         if(ui.photoBusy){ui.status('사진을 준비하고 있습니다. 완료 후 저장해주세요.','info');return;}
@@ -126,8 +127,10 @@ onAuthStateChanged(auth,async user=>{
         session={uid:user.uid,coupleId:initial.coupleId,archive:!!archiveId};ui.session(session);couple=await api.getCouple(session.coupleId);
         window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
         document.getElementById('coupleConnectionLink').href=pageURL('couple-connect.html');
+        const deletionLink=document.getElementById('accountDeletionLink');if(deletionLink)deletionLink.href=pageURL('account-delete.html');
+        const licensesLink=document.getElementById('licensesLink');if(licensesLink)licensesLink.href=pageURL('licenses.html');
         if(!couple)throw Error('일기장을 찾을 수 없습니다.');
-        if(session.archive){document.querySelector('.quick-write-btn').hidden=true;document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.nav-settings').hidden=true;}
+        if(session.archive){document.querySelector('.intro-write')?.setAttribute('hidden','');document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.nav-settings').hidden=true;}
         stops.push(api.watchCouple(session.coupleId,value=>{
             if(!value||(!session.archive&&value.status!=='active')){ui.persistDraft();location.replace(pageURL('couple-connect.html'));return;}
             couple=value;render().catch(fail);window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));

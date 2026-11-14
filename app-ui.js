@@ -39,7 +39,7 @@ function uiIcon(name) {
         function restoreModalFocus(id){modalFocus.get(id)?.focus();modalFocus.delete(id);}
 
         // 확인 모달 관련 함수
-        function showConfirmModal(title, message, callback, icon = '⚠️') {
+        function showConfirmModal(title, message, callback, icon = '⚠️', confirmLabel = '삭제') {
             document.getElementById('confirmIcon').textContent = icon;
             document.getElementById('confirmTitle').textContent = title;
             document.getElementById('confirmMessage').textContent = message;
@@ -50,6 +50,7 @@ function uiIcon(name) {
             // 삭제 버튼에 이벤트 리스너 추가
             const deleteBtn = document.getElementById('confirmDeleteBtn');
             const newDeleteBtn = deleteBtn.cloneNode(true);
+            newDeleteBtn.textContent = t(confirmLabel);
             deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
             
             newDeleteBtn.addEventListener('click', () => {
@@ -935,7 +936,7 @@ function openEditor(date,preserve=true) {
 async function addPhotos(files) {
     if(window.diaryMonetization&&!window.diaryMonetization.requestPhoto())return;
     const targetDate=editorDate;
-    const list=Array.from(files);if(uploadedPhotos.length+list.length>3){alert('사진은 총 3장까지 첨부할 수 있습니다.');return;}
+    const list=Array.from(files);if(uploadedPhotos.length+list.length>3){window.diaryUI.status('사진은 총 3장까지 첨부할 수 있습니다.','error');return;}
     if(window.diaryUI.photoBusy)return;
     window.diaryUI.photoBusy=true;
     try {
@@ -945,7 +946,7 @@ async function addPhotos(files) {
         }
         if(editorDate!==targetDate)throw Error('날짜가 변경되었습니다. 사진을 다시 첨부해주세요.');
         uploadedPhotos.push(...prepared);displayPhotoPreviews();persistDraft();
-    }catch(e){alert(e.message);}finally{window.diaryUI.photoBusy=false;document.getElementById('photoInput').value='';document.getElementById('cameraInput').value='';}
+    }catch(e){window.diaryUI.status(e.message,'error');}finally{window.diaryUI.photoBusy=false;document.getElementById('photoInput').value='';document.getElementById('cameraInput').value='';}
 }
 function renderWeekdays(){fmt.weekdays('short').forEach((name,index)=>{const cell=document.querySelectorAll('.weekdays .weekday')[index];if(cell)cell.textContent=name;});}
 renderWeekdays();

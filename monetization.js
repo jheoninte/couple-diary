@@ -30,7 +30,7 @@ dialog.innerHTML = `<button class="membership-close" aria-label="구독 안내 �
     <div id="nativeBillingActions" hidden><button id="restorePurchases" class="text-button">구매 복원</button><button id="manageSubscription" class="text-button">Apple 구독 관리</button></div>
     <p class="membership-terms" id="membershipRenewal"></p>
     <p class="membership-terms">사진은 자동 압축됩니다. 일기당 최대 3장, 1인 하루 업로드 6회·월 90회입니다. 실패한 업로드 예약도 한도에 포함될 수 있습니다.</p>
-    <p class="membership-terms"><a href="https://www.comino.app/girl-privacy" target="_blank" rel="noopener noreferrer">개인정보 처리방침</a> · <a href="https://www.comino.app/girl-service" target="_blank" rel="noopener noreferrer">이용약관</a></p>
+    <p class="membership-terms"><a href="https://www.comino.app/privacy-p-kr" target="_blank" rel="noopener noreferrer">개인정보 처리방침</a> · <a href="https://www.comino.app/term-p-kr" target="_blank" rel="noopener noreferrer">이용약관</a></p>
     <p class="membership-terms">구독이 끝나도 기존 일기와 사진은 계속 볼 수 있어요. 새 사진 첨부만 제한되며, 텍스트 기록은 계속 무료입니다.</p>`;
 document.body.append(dialog);
 const adBanner = document.createElement("aside");
@@ -63,6 +63,14 @@ for (const [id, method] of [['membershipCheckout', 'buy'], ['restorePurchases', 
   };
 }
 window.addEventListener('diary:billing-updated', render);
+window.addEventListener('diary:native-ready', render);
+const adPrivacyBtn = document.getElementById('adPrivacyBtn');
+if (adPrivacyBtn) {
+  adPrivacyBtn.onclick = async () => {
+    try { await window.diaryAdConsent?.privacy?.(); }
+    catch { window.diaryUI?.status?.('광고 개인정보 설정을 열지 못했습니다. 잠시 후 다시 시도해주세요.', 'error'); }
+  };
+}
 dialog
   .querySelectorAll("input[name=plusPlan]")
   .forEach((input) => input.addEventListener("change", renderRenewal));
@@ -83,6 +91,8 @@ function render() {
   const stateEl = document.getElementById("membershipState");
   const billing = window.diaryBilling;
   const native = document.body.classList.contains('native-ios');
+  const adPrivacy = document.getElementById('adPrivacyBtn');
+  if (adPrivacy) adPrivacy.hidden = !(native && window.diaryAdConsent?.privacy);
   if (state?.plans) {
     const { monthly, yearly } = state.plans;
     document.getElementById("monthlyPrice").textContent =
@@ -111,7 +121,7 @@ function render() {
   stateEl.textContent = active
     ? t('두 사람 모두 Plus 이용 중 · {date}까지', { date: fmt.date(state.premiumUntil) })
     : state
-      ? native ? billing?.available ? 'App Store에서 결제 금액을 확인하고 구독할 수 있어요.' : 'App Store 상품과 서버 연결을 준비 중이에요. 결제는 비활성 상태입니다.' : "토스페이먼츠 정기결제 연결을 준비 중이에요. 현재 결제는 발생하지 않습니다."
+      ? native ? billing?.available ? 'App Store에서 결제 금액을 확인하고 구독할 수 있어요.' : 'App Store 상품과 서버 연결을 준비 중이에요. 결제는 비활성 상태입니다.' : "Plus 구독은 iOS 앱에서 이용할 수 있습니다."
       : "구독 상태를 확인하지 못했어요. 연결 후 다시 확인해주세요.";
   const hint = document.getElementById("photoPlanHint");
   if (hint)
