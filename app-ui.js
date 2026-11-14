@@ -1,7 +1,14 @@
 import holidays from './holidays-data.js';
 import './monetization.js';
+import {t,fmt} from './i18n.js';
 import { preparePhoto } from './image-processing.js';
 import {localDate, validDate, dayNumber, togetherDays, escapeHTML, safePhotoURL, readJSON, draftKey, anniversaryTarget, LIMITS} from './web-core.js';
+const SUBSTITUTE_HOLIDAY=/ \(대체공휴일\)$/;
+const holidayLabel=(raw)=>String(raw).split(' · ').map(part=>{
+  const sub=SUBSTITUTE_HOLIDAY.test(part);
+  const base=part.replace(SUBSTITUTE_HOLIDAY,'');
+  return sub?t('{name} (대체공휴일)',{name:t(base)}):t(base);
+}).join(' · ');
 // Small, consistent interface icons; personal moods and avatars remain expressive.
 function uiIcon(name) {
     const paths={book:'<path d="M12 5C8 2 3 4 3 4v16s5-2 9 1c4-3 9-1 9-1V4s-5-2-9 1Zm0 0v16"/>',photo:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 3-3 6 6"/>',edit:'<path d="m16 3 5 5-12 12-6 1 1-6L16 3Zm-2 2 5 5"/>',trash:'<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/>',heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',comment:'<path d="M21 11.5a9 9 0 0 1-9 9 10 10 0 0 1-4-.8L3 21l1.3-5A9 9 0 1 1 21 11.5Z"/>'};
@@ -24,6 +31,8 @@ function uiIcon(name) {
         let currentTheme = 'pink';
         let appTitle = '우리의 공간';
         let myDisplayName='나', partnerDisplayName='파트너';
+        // Default names are placeholders and follow the language; nicknames the user typed are shown exactly as written.
+        const shownName=name=>name==='나'||name==='파트너'?t(name):name;
         let editingRevision=0, editorDate=localDate(), suppressDraft=false, session=null;
         const modalFocus=new Map();
         function focusModal(id,selector){modalFocus.set(id,document.activeElement);document.querySelector(`#${id} ${selector}`)?.focus();}
@@ -82,7 +91,7 @@ function uiIcon(name) {
         }
 
         function updateAppTitle(title) {
-            document.getElementById('appTitle').textContent = title;
+            document.getElementById('appTitle').textContent = title === '우리의 공간' ? t(title) : title;
             
         }
 
@@ -140,7 +149,7 @@ function uiIcon(name) {
         }
 
         // 함께한 날 계산 함수
-        function updateDaysTogether() { const el=document.getElementById('daysTogether'); if(el)el.textContent=`💕 함께한 지 ${togetherDays(startDate)}일`; }
+        function updateDaysTogether() { const el=document.getElementById('daysTogether'); if(el)el.textContent=t('💕 함께한 지 {n}일',{n:fmt.number(togetherDays(startDate))}); }
 
         function saveSettings() { return window.diaryActions?.saveSettings(); }
 
@@ -197,7 +206,7 @@ function uiIcon(name) {
             
             // 월 표시
             document.getElementById('currentMonth').textContent = 
-                `${year}년 ${month + 1}월`;
+                fmt.monthYear(year, month);
             
             // 첫 날과 마지막 날
             const firstDay = new Date(year, month, 1);
@@ -235,7 +244,7 @@ function uiIcon(name) {
                 if (isHoliday) classes += ' holiday';
                 if (isAnniversary) classes += ' anniversary-day';
                 
-                const holidayAttr = isHoliday ? `data-holiday="${isHoliday}"` : '';
+                const holidayAttr = isHoliday ? `data-holiday="${holidayLabel(isHoliday).replace(/"/g,'&quot;')}"` : '';
                 
                 // 아이콘 표시
                 let iconsHtml = '';
@@ -341,7 +350,7 @@ function uiIcon(name) {
             addBtn.disabled = anniversaries.length >= 30;
         }
 
-        function calculateDday(dateStr) { const diff=dayNumber(dateStr)-dayNumber(localDate());return diff===0?'오늘이 바로 그날! 🎉':diff>0?`D-${diff}`:`${Math.abs(diff)}일 전`; }
+        function calculateDday(dateStr) { const diff=dayNumber(dateStr)-dayNumber(localDate());return diff===0?t('오늘이 바로 그날! 🎉'):diff>0?`D-${diff}`:t('{n}일 전',{n:fmt.number(Math.abs(diff))}); }
 
         function showAddAnniversaryForm() {
             document.getElementById('anniversaryForm').style.display = 'block';
@@ -400,11 +409,11 @@ function uiIcon(name) {
             let message = '';
             
             if (nearest.diff === 0) {
-                message = `오늘은 <strong>${escapeHTML(nearest.name)}</strong>입니다! ${escapeHTML(icon)}`;
+                message = t('오늘은 <strong>{name}</strong>입니다! {icon}',{name:escapeHTML(nearest.name),icon:escapeHTML(icon)});
             } else if (nearest.diff <= 7) {
-                message = `<strong>${escapeHTML(nearest.name)}</strong>이(가) ${nearest.diff}일 남았어요! ${dday}`;
+                message = t('<strong>{name}</strong>이(가) 곧 다가와요! {dday}',{name:escapeHTML(nearest.name),dday});
             } else {
-                message = `다가오는 기념일: <strong>${escapeHTML(nearest.name)}</strong> ${dday}`;
+                message = t('다가오는 기념일: <strong>{name}</strong> {dday}',{name:escapeHTML(nearest.name),dday});
             }
             
             container.innerHTML = `
@@ -421,7 +430,7 @@ function uiIcon(name) {
         // 선택된 날짜의 일기 표시
         function displayDateEntries(dateStr, discardInputs=false) {
             const heading=document.getElementById('selectedDateHeading');
-            if(heading)heading.textContent=dateStr===localDate()?'오늘의 이야기':new Date(dateStr+'T12:00:00').toLocaleDateString('ko-KR',{month:'long',day:'numeric'})+'의 이야기';
+            if(heading)heading.textContent=dateStr===localDate()?t('오늘의 이야기'):t('{date}의 이야기',{date:fmt.date(dateStr+'T12:00:00',{month:'long',day:'numeric'})});
             const drafts=discardInputs?[]:[...document.querySelectorAll('#selectedDayEntries input')].map(input=>({id:input.id,value:input.value,focused:input===document.activeElement}));
             const myEntry = entries[dateStr];
             const partnerEntry = partnerEntries[dateStr];
@@ -483,7 +492,7 @@ function uiIcon(name) {
             const currentUserUid = window.currentUserUid;
             const isMine = comment.author === currentUserUid;
             return {
-                label: isMine ? myDisplayName : partnerDisplayName,
+                label: shownName(isMine ? myDisplayName : partnerDisplayName),
                 icon: isMine ? myIcon : partnerIcon,
                 canEdit: isMine
             };
@@ -495,7 +504,7 @@ function uiIcon(name) {
             const cardClass = isMyEntry ? '' : 'partner';
             const writerClass = isMyEntry ? '' : 'partner-writer';
             const writerIcon = isMyEntry ? myIcon : partnerIcon;
-            const writerName = isMyEntry ? myDisplayName : partnerDisplayName;
+            const writerName = shownName(isMyEntry ? myDisplayName : partnerDisplayName);
             const commentCount = Array.isArray(entry.comments) ? entry.comments.length : 0;
             
             let html = `
@@ -527,9 +536,9 @@ function uiIcon(name) {
             const photoCount = entry.photos ? entry.photos.length : 0;
             html += `
                 <div class="diary-meta">
-                    <span class="diary-meta-item">${charCount}자의 마음</span>
-                    ${photoCount > 0 ? `<span class="diary-meta-item">사진 ${photoCount}장</span>` : ''}
-                    <span class="diary-meta-item">${new Date(entry.createdAt).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})}</span>
+                    <span class="diary-meta-item">${t('{n}자의 마음',{n:fmt.number(charCount)})}</span>
+                    ${photoCount > 0 ? `<span class="diary-meta-item">${t('사진 {n}장',{n:fmt.number(photoCount)})}</span>` : ''}
+                    <span class="diary-meta-item">${fmt.time(entry.createdAt)}</span>
                 </div>
             `;
             
@@ -719,7 +728,7 @@ function uiIcon(name) {
             .sort((a,b)=>(b.date||'').localeCompare(a.date||''))
             .flatMap(e => e.photos.map(path=>({path,date:e.date||''})));
             
-            document.getElementById('galleryCount').textContent = `${allPhotos.length}개의 사진`;
+            document.getElementById('galleryCount').textContent = t('{n}개의 사진',{n:fmt.number(allPhotos.length)});
             
             const grid = document.getElementById('memoriesGrid');
             
@@ -736,7 +745,7 @@ function uiIcon(name) {
             } else {
                 grid.innerHTML = allPhotos.map(photo => 
                     `<div class="memory-item">
-                        <img data-photo-path="${escapeHTML(photo.path)}" loading="lazy" alt="${escapeHTML(photo.date)} 함께한 순간">
+                        <img data-photo-path="${escapeHTML(photo.path)}" loading="lazy" alt="${escapeHTML(t('{date} 함께한 순간',{date:photo.date}))}">
                         ${photo.date?`<span class="memory-date">${escapeHTML(photo.date.replaceAll('-','.'))}</span>`:''}
                     </div>`
                 ).join('');
@@ -884,7 +893,7 @@ function uiIcon(name) {
                     }).catch(()=>{image.alt='사진을 불러오지 못했습니다';window.diaryUI.status('일부 사진을 불러오지 못했습니다. 기록과 사진 경로는 유지됩니다.','error');});
                 }
             },{rootMargin:'120px'});
-            document.querySelectorAll('img[data-photo-path]').forEach(img=>{img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label',`${img.alt} 크게 보기`);photoObserver.observe(img);});
+            document.querySelectorAll('img[data-photo-path]').forEach(img=>{img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label',t('{name} 크게 보기',{name:img.alt}));photoObserver.observe(img);});
         }
         document.addEventListener('click',e=>{const image=e.target.closest?.('img[data-photo-path]');if(image)window.diaryActions?.openPhoto(image.dataset.photoPath);});
         document.addEventListener('keydown',e=>{if(['Enter',' '].includes(e.key)&&e.target.matches?.('img[data-photo-path]')){e.preventDefault();e.target.click();}});
@@ -931,8 +940,12 @@ async function addPhotos(files) {
         uploadedPhotos.push(...prepared);displayPhotoPreviews();persistDraft();
     }catch(e){alert(e.message);}finally{window.diaryUI.photoBusy=false;document.getElementById('photoInput').value='';}
 }
+function renderWeekdays(){fmt.weekdays('short').forEach((name,index)=>{const cell=document.querySelectorAll('.weekdays .weekday')[index];if(cell)cell.textContent=name;});}
+renderWeekdays();
 window.diaryUI={
     photoBusy:false,
+    // Re-renders everything generated in JavaScript after the language changes; markup in index.html is handled by the DOM translator.
+    relocale(){renderWeekdays();if(!session)return;updateAppTitle(appTitle);renderCalendar();updateStats();updateMemories();updateUpcomingAnniversary();updateDaysTogether();if(selectedDate)displayDateEntries(selectedDate);if(document.getElementById('settingsModal').classList.contains('active'))renderAnniversaryList();},
     session(value){session=value;entries={};partnerEntries={};anniversaries=[];editorDate=localDate();openEditor(localDate(),false);},
     editor(){return {date:document.getElementById('entryDate').value,content:document.getElementById('diaryContent').value.trim(),mood:selectedMoodValue,photos:[...uploadedPhotos],revision:editingRevision};},
     updateRevision(date,next,previous){if(editorDate===date&&editingRevision===previous)editingRevision=next;},

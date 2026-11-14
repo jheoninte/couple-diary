@@ -3,6 +3,7 @@ import { activeMembership, annualDiscount } from "./monetization-core.js";
 import { createAdsController } from "./ads-controller.js";
 import './native-bridge.js';
 import './native-billing.js';
+import { t, fmt } from './i18n.js';
 
 let session = null,
   state = null,
@@ -10,7 +11,7 @@ let session = null,
   refreshing = null,
   expiryTimer = null;
 const ads = createAdsController();
-const won = (value) => new Intl.NumberFormat("ko-KR").format(value) + "원";
+const won = (value) => fmt.won(value);
 const dialog = document.createElement("dialog");
 dialog.id = "membershipDialog";
 dialog.setAttribute("aria-labelledby", "membershipTitle");
@@ -72,8 +73,8 @@ function renderRenewal() {
     price = state.plans[plan].amount;
   document.getElementById("membershipRenewal").textContent =
     window.diaryBilling?.available && window.diaryBilling.products[plan]
-      ? `${plan === 'yearly' ? '1년마다' : '1개월마다'} ${window.diaryBilling.products[plan].displayPrice} 자동 갱신됩니다. 결제는 Apple 계정에 청구되며, 다음 갱신 전 Apple 구독 관리에서 해지할 수 있습니다. 연간 구독은 한 번에 청구됩니다.`
-      : `결제 연결 후 ${plan === "yearly" ? "연" : "월"} ${won(price)} 자동 갱신 상품으로 제공할 예정입니다. 현재는 요금 안내만 제공하며 결제·구독 신청은 발생하지 않습니다.`;
+      ? t(plan === 'yearly' ? '1년마다 {price} 자동 갱신됩니다. 결제는 Apple 계정에 청구되며, 다음 갱신 전 Apple 구독 관리에서 해지할 수 있습니다. 연간 구독은 한 번에 청구됩니다.' : '1개월마다 {price} 자동 갱신됩니다. 결제는 Apple 계정에 청구되며, 다음 갱신 전 Apple 구독 관리에서 해지할 수 있습니다. 연간 구독은 한 번에 청구됩니다.', { price: window.diaryBilling.products[plan].displayPrice })
+      : t('결제 연결 후 {plan} 자동 갱신 상품으로 제공할 예정입니다. 현재는 요금 안내만 제공하며 결제·구독 신청은 발생하지 않습니다.', { plan: t(plan === 'yearly' ? '연 {price}' : '월 {price}', { price: won(price) }) });
 }
 function render() {
   const active = activeMembership(state);
@@ -85,21 +86,21 @@ function render() {
   if (state?.plans) {
     const { monthly, yearly } = state.plans;
     document.getElementById("monthlyPrice").textContent =
-      won(monthly.amount) + " / 월";
+      t('{price} / 월', { price: won(monthly.amount) });
     document.getElementById("yearlyPrice").textContent =
-      won(yearly.amount) + " / 년";
+      t('{price} / 년', { price: won(yearly.amount) });
     document.getElementById("annualDiscount").textContent =
-      annualDiscount(monthly.amount, yearly.amount) + "% 할인";
+      t('{n}% 할인', { n: fmt.number(annualDiscount(monthly.amount, yearly.amount)) });
     document.getElementById("annualEquivalent").textContent =
-      `월 ${won(yearly.amount / 12)} 수준 · 연간 일시 결제`;
+      t('월 {price} 수준 · 연간 일시 결제', { price: won(yearly.amount / 12) });
   }
   if (native && billing?.products.monthly && billing?.products.yearly) {
     const {monthly,yearly} = billing.products;
-    document.getElementById('monthlyPrice').textContent = monthly.displayPrice + ' / 월';
-    document.getElementById('yearlyPrice').textContent = yearly.displayPrice + ' / 년';
+    document.getElementById('monthlyPrice').textContent = t('{price} / 월', { price: monthly.displayPrice });
+    document.getElementById('yearlyPrice').textContent = t('{price} / 년', { price: yearly.displayPrice });
     const sameCurrency = monthly.currency === yearly.currency;
-    document.getElementById('annualDiscount').textContent = sameCurrency ? annualDiscount(monthly.amount, yearly.amount) + '% 할인' : '';
-    document.getElementById('annualEquivalent').textContent = sameCurrency ? `월 ${new Intl.NumberFormat(undefined,{style:'currency',currency:yearly.currency}).format(yearly.amount/12)} 수준 · 연간 일시 결제` : '연간 일시 결제';
+    document.getElementById('annualDiscount').textContent = sameCurrency ? t('{n}% 할인', { n: fmt.number(annualDiscount(monthly.amount, yearly.amount)) }) : '';
+    document.getElementById('annualEquivalent').textContent = sameCurrency ? t('월 {price} 수준 · 연간 일시 결제', { price: fmt.currency(yearly.amount / 12, yearly.currency) }) : '연간 일시 결제';
   }
   const chosen = dialog.querySelector('input[name=plusPlan]:checked').value;
   const checkout = document.getElementById('membershipCheckout');
@@ -108,7 +109,7 @@ function render() {
   document.getElementById('nativeBillingActions').hidden = !native;
   document.getElementById('restorePurchases').disabled = !billing?.available || billing.busy;
   stateEl.textContent = active
-    ? `두 사람 모두 Plus 이용 중 · ${new Date(state.premiumUntil).toLocaleDateString("ko-KR")}까지`
+    ? t('두 사람 모두 Plus 이용 중 · {date}까지', { date: fmt.date(state.premiumUntil) })
     : state
       ? native ? billing?.available ? 'App Store에서 결제 금액을 확인하고 구독할 수 있어요.' : 'App Store 상품과 서버 연결을 준비 중이에요. 결제는 비활성 상태입니다.' : "토스페이먼츠 정기결제 연결을 준비 중이에요. 현재 결제는 발생하지 않습니다."
       : "구독 상태를 확인하지 못했어요. 연결 후 다시 확인해주세요.";

@@ -87,3 +87,24 @@ node scripts/configure-ios.cjs
 `.env.staging`, `functions/.env.couple-diary-comino-staging`, CLI 로그인, Secret Manager, 로컬 개인 키/리뷰 비밀번호는 Git 제외. 같은 맥에는 기존 설정이 남아 있지만 다른 컴퓨터에서는 Firebase 공개 SDK 설정과 권한 있는 로그인/시크릿 구성을 복구해야 한다. `.env.example`과 운영 문서 참고.
 
 최종 커밋 직전 `npm test`와 `npm run build:staging` 결과는 이 인수인계 저장 작업에서 확인한다. 실패를 숨기거나 현지화 완료로 표시하지 않는다. 사용자는 백업에 시간·토큰을 쓰지 말라고 요청했다. 이번 작업에서 신규 백업을 실행하지 않았다.
+
+## 현지화 진행 현황 (Claude 세션 업데이트)
+
+완료 아님. 지역화는 계속 미완료로 취급합니다.
+
+- 18개 언어 카탈로그: `locales/*.tsv` → `locales/catalogs.json` (444 keys × 18). `npm run locales:build`
+- 날짜·숫자·가격은 `Intl` 기반 `fmt` 헬퍼 사용 (그레고리력·라틴 숫자). 언어 변경 시 `diaryUI.relocale()` 호출.
+- 공휴일 이름, 구독/결제 문구, 로그인/연결/동기화 메시지 번역 추가.
+- `npm run locales:coverage`: 미번역 문자열 검사. `tests/i18n-catalog.test.js`가 placeholder 보존과 커버리지를 검증.
+- `npm test`: 63/63 통과 (functions/ 에서 `npm ci` 필요).
+
+### 남은 일
+1. privacy/terms/licenses 법적 문서(36개 문자열)는 기계번역하지 않음 → 사람/법무 검수 필요. terms·licenses는 언어 전환 UI 없음.
+2. 모든 번역은 원어민 검수 필요 (특히 th, ms, hi, ar).
+3. 아랍어 RTL 및 긴 문장 레이아웃 QA.
+4. iOS InfoPlist.strings 현지화.
+5. Auth 메일 언어 우선순위, functions/ 서버 오류 메시지.
+6. 브라우저 E2E QA와 네이티브 빌드 (이 세션에서는 `.env.staging` 부재로 `build:staging` 미실행).
+7. 보호 셀렉터 확장 또는 명시적 키 전환.
+
+TestFlight 1403에는 현지화가 포함되어 있지 않습니다. main 머지/백업/푸시는 하지 않았습니다.

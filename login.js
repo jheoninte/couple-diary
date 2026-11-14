@@ -1,4 +1,5 @@
 import {withTimeout} from './request-timeout.js';
+import {t} from './i18n.js';
 import {auth,pageURL} from './firebase-config.js';
 import {createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,sendEmailVerification} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 const $=id=>document.getElementById(id);
@@ -42,7 +43,7 @@ $('signupForm').addEventListener('submit',e=>{
  });
 });
 $('resetPasswordBtn').onclick=()=>tab('reset');$('backToLoginBtn').onclick=()=>tab('login');
-function updateReset(){const seconds=Math.ceil((resetUntil-Date.now())/1000),button=$('resetSendBtn');if(seconds>0){button.disabled=true;button.textContent=`${seconds}초 후 다시 보내기`;}else if(!busy){button.disabled=false;button.textContent='재설정 이메일 보내기';}}
+function updateReset(){const seconds=Math.ceil((resetUntil-Date.now())/1000),button=$('resetSendBtn');if(seconds>0){button.disabled=true;button.textContent=t('{n}초 후 다시 보내기',{n:seconds});}else if(!busy){button.disabled=false;button.textContent='재설정 이메일 보내기';}}
 $('resetForm').addEventListener('submit',e=>{e.preventDefault();if(busy||Date.now()<resetUntil)return;if(!$('resetEmail').reportValidity())return;
  run($('resetSendBtn'),'이메일 보내는 중…',async()=>{try{await withTimeout(sendPasswordResetEmail(auth,$('resetEmail').value.trim()));}catch(e){if(e.code!=='auth/user-not-found')throw e;}
  resetUntil=Date.now()+60000;$('resetHint').hidden=false;message('가입된 이메일이라면 재설정 링크를 보냈어요. 메일함과 스팸함을 확인해주세요.','success');

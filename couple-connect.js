@@ -4,6 +4,7 @@ import * as api from './diary-api.js';
 import {localDate} from './web-core.js';
 import {normalizeInviteCode,formatInviteCode} from './invite-code.js';
 import {withTimeout} from './request-timeout.js';
+import {t,fmt} from './i18n.js';
 const $=id=>document.getElementById(id);
 document.querySelector('.back-link').href=pageURL('index.html');$('accountDeletionLink').href=pageURL('account-delete.html');
 let user=null,coupleId=null,currentCouple=null,stopUser=null,stopCouple=null,busy=false,ready=false,mode=null,revision=0,spaceRevision=0,verifyUntil=0;
@@ -17,9 +18,9 @@ function display(couple){
  $('notConnectedSection').hidden=connected;$('connectedSection').hidden=!connected;$('connectedSection').style.display=connected?'block':'none';$('connectLoading').hidden=true;$('connectRetry').hidden=true;ready=true;if(wasReady&&connected&&!wasConnected)message('연결됐어요! 이제 같은 일기장에서 서로의 기록을 볼 수 있어요.');
  $('invitePanel').hidden=mode!=='invite';$('joinPanel').hidden=mode!=='join';$('chooseHint').hidden=!!mode;
  $('chooseInvite').setAttribute('aria-pressed',String(mode==='invite'));$('chooseJoin').setAttribute('aria-pressed',String(mode==='join'));
- if(connected){const id=couple.user1===user.uid?couple.user2:couple.user1;$('partnerEmail').textContent=couple.settings?.[id]?.displayName||'파트너';}
+ if(connected){const id=couple.user1===user.uid?couple.user2:couple.user1;$('partnerEmail').textContent=couple.settings?.[id]?.displayName||t('파트너');}
  $('generatedCodeSection').style.display=valid&&mode==='invite'&&!connected?'block':'none';
- if(valid){$('generatedCode').textContent=formatInviteCode(couple.inviteCode);$('codeExpiry').textContent=`${new Date(couple.inviteExpiresAt).toLocaleString('ko-KR')}까지 · 한 사람만 사용 가능`;}
+ if(valid){$('generatedCode').textContent=formatInviteCode(couple.inviteCode);$('codeExpiry').textContent=t('{date}까지 · 한 사람만 사용 가능',{date:fmt.date(couple.inviteExpiresAt,{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})});}
  $('generateCodeBtn').textContent=coupleId?'새 초대 코드 만들기':'일기장 만들고 초대하기';
  $('soloCloseBtn').hidden=!coupleId||connected||mode!=='join';$('currentSpaceNotice').hidden=$('soloCloseBtn').hidden;$('soloDiaryBtn').hidden=!coupleId||connected;
  document.querySelector('.header-title').textContent=connected?'이제, 함께 기록해요':coupleId?'연인의 연결을 기다리고 있어요':'둘만의 일기장, 함께 시작해요';
@@ -32,7 +33,7 @@ window.connectWithCode=()=>run(async()=>{const code=normalizeInviteCode($('coupl
 $('coupleCodeInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();window.connectWithCode();}});
 async function copyInvite(){const code=formatInviteCode(currentCouple.inviteCode);try{await navigator.clipboard.writeText(code);message('코드를 복사했어요. 연인에게 붙여넣어 보내주세요.');}catch{const selection=window.getSelection(),range=document.createRange();range.selectNodeContents($('generatedCode'));selection.removeAllRanges();selection.addRange(range);message('코드를 선택했어요. 길게 누르거나 복사 단축키로 복사해주세요.');}}
 $('copyInviteBtn').onclick=()=>run(copyInvite);
-$('shareInviteBtn').onclick=()=>run(async()=>{if(!navigator.share){await copyInvite();return;}try{await navigator.share({title:'우리의 공간 초대',text:`우리의 공간에서 함께 일기 써요.\n초대 코드: ${formatInviteCode(currentCouple.inviteCode)}\n앱에서 각자의 계정으로 가입한 뒤 ‘초대 코드를 받았어요’를 선택해 코드를 입력해주세요. 코드는 24시간 동안 한 사람만 사용할 수 있어요.`});}catch(e){if(e.name!=='AbortError')await copyInvite();}});
+$('shareInviteBtn').onclick=()=>run(async()=>{if(!navigator.share){await copyInvite();return;}try{await navigator.share({title:t('우리의 공간 초대'),text:[t('우리의 공간에서 함께 일기 써요.'),t('초대 코드: {code}',{code:formatInviteCode(currentCouple.inviteCode)}),t('앱에서 각자의 계정으로 가입한 뒤 ‘초대 코드를 받았어요’를 선택해 코드를 입력해주세요. 코드는 24시간 동안 한 사람만 사용할 수 있어요.')].join('\n')});}catch(e){if(e.name!=='AbortError')await copyInvite();}});
 window.disconnectCouple=()=>{if(!confirm('현재 공유 일기장을 보관할까요? 두 사람의 연결이 해제되고, 각자의 보관함에는 자신이 작성한 일기만 남아요. 상대방 일기도 보관하려면 먼저 전체 기록을 내보내주세요.'))return;return run(async()=>{await api.call('disconnect',{coupleId});location.reload();});};
 window.goToDiary=()=>{if(!coupleId){message('일기장을 만들거나 받은 초대 코드로 연결해주세요.',true);return;}location.href=pageURL('index.html');};
 $('connectLogoutBtn').onclick=()=>run(()=>signOut(auth));
@@ -45,6 +46,6 @@ onAuthStateChanged(auth,async value=>{
  $('userEmail').textContent=user.email;$('verifyEmailBtn').hidden=user.emailVerified;$('checkEmailBtn').hidden=user.emailVerified;
  try{await api.call('initialize');if(version!==revision)return;stopUser=api.watchUser(u=>{if(version===revision)watchSpace(u.coupleId||null);},()=>{message('내 일기장을 확인하지 못했어요. 다시 확인해주세요.',true);$('connectRetry').hidden=false;});
  const archives=await api.archives();if(version!==revision)return;const list=$('archiveList');list.replaceChildren();document.querySelector('.archive-section').hidden=!archives.length;
- for(const item of archives){const link=document.createElement('a');link.textContent=`${new Date(item.closedAt).toLocaleDateString('ko-KR')} 보관함 · 내 일기`;const url=new URL(pageURL('index.html'),location.href);url.searchParams.set('archive',item.coupleId);link.href=url.href;list.append(link,document.createElement('br'));}
+ for(const item of archives){const link=document.createElement('a');link.textContent=t('{date} 보관함 · 내 일기',{date:fmt.date(item.closedAt)});const url=new URL(pageURL('index.html'),location.href);url.searchParams.set('archive',item.coupleId);link.href=url.href;list.append(link,document.createElement('br'));}
  }catch{if(version===revision){message('일기장을 준비하지 못했어요. 인터넷 연결을 확인해주세요.',true);$('connectLoading').hidden=true;$('connectRetry').hidden=false;}}
 });

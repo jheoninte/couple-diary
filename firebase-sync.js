@@ -2,6 +2,7 @@ import {auth, pageURL} from './firebase-config.js';
 import {onAuthStateChanged, signOut} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import * as api from './diary-api.js';
 import {validDate, localDate, LIMITS} from './web-core.js';
+import {t} from './i18n.js';
 const ui=window.diaryUI;
 document.getElementById('gateLoginLink').href=pageURL('login.html');
 let session=null,couple=null,records=new Map(),stops=[],entryStop=null,pageSize=100,generation=0,ready=false,entriesLoaded=false,editorInitialized=false;
@@ -37,7 +38,7 @@ function subscribeEntries() {
     entryStop?.();ready=false;
     entryStop=api.watchEntries(session.coupleId,session.archive,snap=>{
         records=new Map(snap.docs.map(d=>[d.id,d.data()]));entriesLoaded=true;
-        document.getElementById('recordScope').textContent=`${session.archive?'보관함 · ':''}최근 ${snap.size}개 기록을 불러왔습니다. 검색·달력·사진은 불러온 기록을 기준으로 표시합니다.`;
+        document.getElementById('recordScope').textContent=t(session.archive?'보관함 · 최근 {n}개 기록을 불러왔습니다. 검색·달력·사진은 불러온 기록을 기준으로 표시합니다.':'최근 {n}개 기록을 불러왔습니다. 검색·달력·사진은 불러온 기록을 기준으로 표시합니다.',{n:snap.size});
         document.getElementById('loadOlderBtn').hidden=snap.size<pageSize;
         render().catch(fail);
     },e=>{fail(e);document.getElementById('loadingMessage').textContent='기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';},pageSize);
