@@ -44,7 +44,10 @@ platform :ios do
 
   private_lane :build_signed do |options|
     key = options[:key]
-    build = latest_testflight_build_number(initial_build_number: 0) + 1
+    # 기존 규칙 유지: YYYYMMDD + 2자리 순번 (예: 2026111403)
+    latest = latest_testflight_build_number(initial_build_number: 0).to_i
+    today = Time.now.strftime("%Y%m%d")
+    build = latest.to_s.start_with?(today) ? latest + 1 : "#{today}01".to_i
     UI.message("빌드 번호: #{build}")
 
     build_app(
