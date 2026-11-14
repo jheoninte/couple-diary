@@ -23,3 +23,4 @@ functions/.secret.local
 
 .backups/
 *.backup.json
+build/

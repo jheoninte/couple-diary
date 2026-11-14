@@ -108,3 +108,11 @@ node scripts/configure-ios.cjs
 7. 보호 셀렉터 확장 또는 명시적 키 전환.
 
 TestFlight 1403에는 현지화가 포함되어 있지 않습니다. main 머지/백업/푸시는 하지 않았습니다.
+
+## 출시 준비 업데이트 (2026-11-14 저녁)
+
+- 개인정보 처리방침/이용약관은 앱에 포함하지 않고 https://www.comino.app/girl-privacy , https://www.comino.app/girl-service 로 연결. `privacy.html`, `terms.html` 삭제. `licenses.html`(공휴일 데이터 CC BY-SA 고지)은 유지.
+- 18개 언어는 모두 제공하되 ko/ja/en만 품질 확보 대상이며 나머지는 임시 번역(다음 업데이트에서 검수).
+- `scripts/configure-ios.cjs`가 ko/en/ja `InfoPlist.strings`(앱 이름, 추적 허용 문구)와 `CFBundleLocalizations`를 설정. 영어/일본어 앱 이름은 임시값(Our Space / ふたりの空間)이므로 App Store Connect 표기와 맞는지 확인할 것.
+- `scripts/release-ios.sh`: Mac에서 실행하는 운영 빌드·아카이브·TestFlight 업로드. 운영 Firebase(couple-diary-75157) + AdMob 실광고(`VITE_ADMOB_LIVE_ADS=true`). 서버 배포·심사 제출은 하지 않음. 빌드 후 스테이징 설정/실광고 ID 포함 여부를 점검.
+- 심사 제출 전 사람이 확인할 것: 운영 Functions(`functions/package.json` main=billing-enabled.cjs)/appleBilling/규칙/인덱스 배포 상태, 실기기 StoreKit Sandbox 구매·복원, App Store Connect의 약관(EULA) 링크, IAP 심사 제출 상태.
