@@ -22,8 +22,8 @@ fs.writeFileSync(p,s);
 // Localized app name and tracking prompt (ko/en/ja). Other languages fall back to English.
 const strings={
  ko:{CFBundleDisplayName:'우리의 공간',NSUserTrackingUsageDescription:'광고 제공과 광고 성과 측정을 위해 기기 식별자를 사용할 수 있습니다. 허용하지 않아도 일기를 이용할 수 있습니다.'},
- en:{CFBundleDisplayName:'Our Space',NSUserTrackingUsageDescription:'Your device identifier may be used to show ads and measure ad performance. You can use the diary even if you choose not to allow it.'},
- ja:{CFBundleDisplayName:'ふたりの空間',NSUserTrackingUsageDescription:'広告の表示と広告効果の測定のために、端末の識別子を使用することがあります。許可しなくても日記はご利用いただけます。'}
+ en:{CFBundleDisplayName:'Our Diary',NSUserTrackingUsageDescription:'Your device identifier may be used to show ads and measure ad performance. You can use the diary even if you choose not to allow it.'},
+ ja:{CFBundleDisplayName:'今日のふたり',NSUserTrackingUsageDescription:'広告の表示と広告効果の測定のために、端末の識別子を使用することがあります。許可しなくても日記はご利用いただけます。'}
 };
 {
  let proj=fs.readFileSync(p,'utf8');
