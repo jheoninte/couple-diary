@@ -94,7 +94,7 @@ function render() {
   const billing = window.diaryBilling;
   const native = document.body.classList.contains('native-ios');
   const adPrivacy = document.getElementById('adPrivacyBtn');
-  if (adPrivacy) adPrivacy.hidden = !(native && window.diaryAdConsent?.privacy);
+  if (adPrivacy) adPrivacy.hidden = !(native && window.diaryAdConsent?.privacyRequired?.());
   if (state?.plans) {
     const { monthly, yearly } = state.plans;
     document.getElementById("monthlyPrice").textContent =

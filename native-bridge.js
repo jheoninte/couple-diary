@@ -22,7 +22,9 @@ async function initializeNative() {
   const photos = registerPlugin('DiaryPhotos');
   window.diaryPhotoPicker = { pick: limit => photos.pick({ limit }).then(r => r.photos || []) };
   // Ads are not initialized on the login page, before membership is known, or for Plus users.
-  let sdk, permission = false, started, nonPersonalized = false;
+  let sdk, permission = false, started, nonPersonalized = false, privacyRequired = false;
+  // The privacy-options entry is only meaningful where UMP requires it (EEA/UK/CH); elsewhere the form never opens.
+  const syncPrivacyButton = () => { const b = document.getElementById('adPrivacyBtn'); if (b) b.hidden = !privacyRequired; };
   async function consent() {
     if (started) return started;
     started = (async () => {
@@ -32,6 +34,7 @@ async function initializeNative() {
         let info = await sdk.AdMob.requestConsentInfo();
         if (info.isConsentFormAvailable && info.status === 'REQUIRED') info = await sdk.AdMob.showConsentForm();
         permission = info.canRequestAds === true; nonPersonalized = false;
+        privacyRequired = info.privacyOptionsRequirementStatus === 'REQUIRED'; syncPrivacyButton();
         console.info('[ads] consent status', info.status, 'canRequestAds', permission);
       } catch (e) {
         console.warn('[ads] consent unavailable; non-personalized ads only', e?.message || e);
@@ -42,7 +45,7 @@ async function initializeNative() {
     })().catch(e => { console.warn('[ads] setup failed', e?.code || '', e?.message || e); permission = false; started = null; });
     await started;
   }
-  window.diaryAdConsent = { canRequestAds: () => permission,
+  window.diaryAdConsent = { canRequestAds: () => permission, privacyRequired: () => privacyRequired,
     async request() { await consent(); window.dispatchEvent(new Event('diary:ad-consent-changed')); },
     async privacy() {
       await consent(); if (!sdk) return;
