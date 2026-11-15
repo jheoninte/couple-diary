@@ -1,7 +1,7 @@
 import { auth, db, storage, functions, pageURL } from './firebase-config.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-functions.js';
 import { doc, getDoc, getDocFromServer, collection, query, orderBy, limit, startAfter, where, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
-import { ref, uploadBytes, getBlob, deleteObject } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
+import { ref, getBlob } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
 export const call=async(action,data={})=>{
     try{return (await httpsCallable(functions,'diary',{timeout:['initialize','disconnect'].includes(action)?540000:20000})({action,...data})).data;}
     catch(error){throw error;}
@@ -28,11 +28,19 @@ let cachedBytes=0;
 export async function photoURL(path) {
     if(photoCache.has(path))return photoCache.get(path).promise;
     const item={size:0,url:null,promise:null};
-    const pending=getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024).then(blob=>{
+    const pending=(async()=>{
+        let blob;
+        try {
+            blob=await getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024);
+        } catch (e) {
+            if (!e?.code?.endsWith('unauthorized') && !e?.code?.endsWith('permission-denied')) throw e;
+            const { dataUrl } = await call('readPhoto', { path });
+            blob = await (await fetch(dataUrl)).blob();
+        }
         item.size=blob.size;item.url=URL.createObjectURL(blob);cachedBytes+=item.size;
         for(const [key,old]of photoCache){if(cachedBytes<=64*1024*1024)break;if(key!==path&&old.url){URL.revokeObjectURL(old.url);cachedBytes-=old.size;photoCache.delete(key);}}
         return item.url;
-    });
+    })();
     item.promise=pending;photoCache.set(path,item);
     try {return await pending;} catch(e){photoCache.delete(path);throw e;}
 }
@@ -43,16 +51,7 @@ export async function clearPhotos() {
 export async function uploadPhoto(cid,dataURL) {
     const response=await fetch(dataURL),blob=await response.blob();
     if(blob.size>512*1024||!/^image\/(jpeg|png|webp)$/.test(blob.type))throw Error('사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
-    const {filename}=await call('reservePhoto',{coupleId:cid});
-    const path=`couples/${cid}/${auth.currentUser.uid}/${filename}`;
-    try {
-        await uploadBytes(ref(storage,path),blob,{contentType:blob.type});
-    } catch (e) {
-        if (e.code === 'storage/unauthorized') {
-            throw Error('사진 업로드 권한이 없습니다. Plus 구독이 유효한지 확인해 주세요. (시간이 지난 후 다시 시도해 보세요.)');
-        }
-        throw e;
-    }
+    const { path } = await call('uploadPhoto', { coupleId: cid, dataUrl: dataURL });
     return path;
 }
-export const discardUpload=path=>deleteObject(ref(storage,path));
+export const discardUpload=()=>Promise.resolve();

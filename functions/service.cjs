@@ -29,6 +29,26 @@ function createService(store,{now=Date.now}={}){
     const owner=await tx.get(`users/${c.user1}`);if(owner?.coupleId!==invite.coupleId)fail('failed-precondition','유효하지 않은 초대입니다.');
     tx.set(cp,{...c,user2:uid,premiumUntil:Math.max(owner.billingUntil||0,user.billingUntil||0),inviteCode:null,inviteExpiresAt:0});tx.set(userPath,{...user,coupleId:invite.coupleId});tx.delete(path);return {coupleId:invite.coupleId};
    }
+   if(action==='readPhoto'){
+    check(typeof data.path==='string'&&data.path.length>0&&data.path.length<=300&&!data.path.includes('..'));
+    let allowed=false;
+    const coupleMatch=data.path.match(/^couples\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/([a-f0-9-]+\.jpg)$/);
+    const legacyMatch=data.path.match(/^photos\/([A-Za-z0-9_-]+)\/([^/]+)$/);
+    if(coupleMatch){
+     const [,targetCid,ownerUid]=coupleMatch,targetCouple=await tx.get(`couples/${targetCid}`);
+     if(targetCouple&&[targetCouple.user1,targetCouple.user2].includes(uid)){
+      if(targetCouple.status==='active'&&user.coupleId===targetCid)allowed=true;
+      else if(targetCouple.status==='closed'&&ownerUid===uid)allowed=true;
+     }
+    }else if(legacyMatch){
+     const [,ownerUid]=legacyMatch;
+     if(ownerUid===uid)allowed=true;
+     else if(user.coupleId){const uc=await tx.get(`couples/${id(user.coupleId)}`);if(uc?.status==='active'&&[uc.user1,uc.user2].includes(uid)&&[uc.user1,uc.user2].includes(ownerUid))allowed=true;}
+    }
+    if(!allowed)fail('permission-denied','사진에 접근할 수 없습니다.');
+    const buffer=await store.readPhoto(data.path);
+    return {dataUrl:`data:image/jpeg;base64,${buffer.toString('base64')}`};
+   }
    const cid=id(data.coupleId),cp=`couples/${cid}`,c=await tx.get(cp);
    if(!c||c.status!=='active'||c.schemaVersion!==2||user.coupleId!==cid||![c.user1,c.user2].includes(uid))fail('permission-denied','이 일기장에 접근할 수 없습니다.');
    if(action==='membership')return {premium:c.premiumUntil>time,premiumUntil:c.premiumUntil||0,plans:{monthly:{amount:4900},yearly:{amount:39900}}};
@@ -50,11 +70,20 @@ function createService(store,{now=Date.now}={}){
     if(action==='anniversaryAdd'){if(rows.some(a=>a.id===key))return {};check(next.length<30);check(date(data.date));next.push({id:key,name:text(data.name,80),date:data.date,icon:text(data.icon,40),recurring:data.recurring===true});}
     tx.set(cp,{...c,anniversaries:next});return {};
    }
-   if(action==='reservePhoto'){
+   if(action==='reservePhoto'||action==='uploadPhoto'){
     if(!(c.premiumUntil>time))fail('permission-denied','사진 업로드는 Plus 구독이 필요합니다.');
     const day=new Date(time+9*3600000).toISOString().slice(0,10),month=day.slice(0,7),qp=`uploadQuotas/${uid}`,q=await tx.get(qp)||{};
     const daily=q.day===day?q.daily:0,monthly=q.month===month?q.monthly:0;if(daily>=6||monthly>=90)fail('resource-exhausted','사진 업로드 한도에 도달했습니다.');
     const filename=randomUUID()+'.jpg',expiresAt=time+10*60000;
+    if(action==='uploadPhoto'){
+     const match=typeof data.dataUrl==='string'&&data.dataUrl.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);
+     if(!match)fail('invalid-argument','사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
+     const buffer=Buffer.from(match[1],'base64');
+     if(!buffer.length||buffer.length>512*1024||buffer[0]!==0xff||buffer[1]!==0xd8||buffer[2]!==0xff)fail('invalid-argument','사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
+     const path=`couples/${cid}/${uid}/${filename}`;
+     await store.savePhoto(path,buffer);
+     tx.set(qp,{day,month,daily:daily+1,monthly:monthly+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false});return {path,filename};
+    }
     tx.set(qp,{day,month,daily:daily+1,monthly:monthly+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false});return {filename};
    }
    check(date(data.date));const author=['saveEntry','deleteEntry','restoreEntry'].includes(action)?uid:id(data.author);check([c.user1,c.user2].includes(author));

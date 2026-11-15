@@ -13,13 +13,13 @@ setGlobalOptions({region:'asia-northeast3',minInstances:0,maxInstances:2,memory:
 const minimalTestflight=process.env.DIARY_TESTFLIGHT_BACKEND==='true';
 const privateKey=minimalTestflight?{value(){throw Error('Billing disabled in internal TestFlight');}}:defineSecret('APPLE_PRIVATE_KEY');
 // Stage writes until all reads finish: Firestore transactions require read-before-write.
-const store={transaction:fn=>db.runTransaction(async native=>{const writes=[];const result=await fn({get:async p=>(await native.get(db.doc(p))).data(),set:(p,v)=>writes.push(()=>native.set(db.doc(p),v)),delete:p=>writes.push(()=>native.delete(db.doc(p)))});writes.forEach(write=>write());return result;}),async photoExists(p){try{const [m]=await getStorage().bucket().file(p).getMetadata();return Number(m.size)<=512*1024&&m.contentType==='image/jpeg';}catch{return false;}}};
+const store={transaction:fn=>db.runTransaction(async native=>{const writes=[];const result=await fn({get:async p=>(await native.get(db.doc(p))).data(),set:(p,v)=>writes.push(()=>native.set(db.doc(p),v)),delete:p=>writes.push(()=>native.delete(db.doc(p)))});writes.forEach(write=>write());return result;}),async photoExists(p){try{const [m]=await getStorage().bucket().file(p).getMetadata();return Number(m.size)<=512*1024&&m.contentType==='image/jpeg';}catch{return false;}},async savePhoto(p,buffer){await getStorage().bucket().file(p).save(buffer,{contentType:'image/jpeg',resumable:false});},async readPhoto(p){const [buffer]=await getStorage().bucket().file(p).download();return buffer;}};
 const service=createService(store);
 const deletionRequests=require('./deletion-requests.cjs').createDeletionRequests(store);
 async function callable(fn){try{return await fn();}catch(e){if(e instanceof HttpsError)throw e;if(e instanceof DomainError)throw new HttpsError(e.code,e.message,e.details);console.error('Server operation failed',e.code||e.name);throw new HttpsError('internal','요청 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');}}
 exports.diary=onCall({timeoutSeconds:540},req=>callable(()=>{
- if(process.env.DIARY_WRITES_ENABLED==='false'&&!['initialize','membership'].includes(req.data?.action))throw new HttpsError('unavailable','서버 점검 중입니다. 작성 중인 초안을 보관하고 잠시 후 다시 시도해주세요.');
- if(process.env.PHOTO_UPLOADS_ENABLED==='false'&&req.data?.action==='reservePhoto')throw new HttpsError('unavailable','사진 업로드를 점검 중입니다. 잠시 후 다시 시도해주세요.');
+ if(process.env.DIARY_WRITES_ENABLED==='false'&&!['initialize','membership','readPhoto'].includes(req.data?.action))throw new HttpsError('unavailable','서버 점검 중입니다. 작성 중인 초안을 보관하고 잠시 후 다시 시도해주세요.');
+ if(process.env.PHOTO_UPLOADS_ENABLED==='false'&&(req.data?.action==='reservePhoto'||req.data?.action==='uploadPhoto'))throw new HttpsError('unavailable','사진 업로드를 점검 중입니다. 잠시 후 다시 시도해주세요.');
  return service.execute(req.auth?.uid,req.data);
 }));
 exports.accountDeletion=onCall(req=>callable(async()=>{
