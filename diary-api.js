@@ -27,7 +27,6 @@ const photoCache=new Map();
 let cachedBytes=0;
 export async function photoURL(path) {
     if(photoCache.has(path))return photoCache.get(path).promise;
-    // Cache the promise too: snapshots can arrive while a photo is being fetched.
     const item={size:0,url:null,promise:null};
     const pending=getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024).then(blob=>{
         item.size=blob.size;item.url=URL.createObjectURL(blob);cachedBytes+=item.size;
@@ -46,6 +45,14 @@ export async function uploadPhoto(cid,dataURL) {
     if(blob.size>512*1024||!/^image\/(jpeg|png|webp)$/.test(blob.type))throw Error('사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
     const {filename}=await call('reservePhoto',{coupleId:cid});
     const path=`couples/${cid}/${auth.currentUser.uid}/${filename}`;
-    await uploadBytes(ref(storage,path),blob,{contentType:blob.type});return path;
+    try {
+        await uploadBytes(ref(storage,path),blob,{contentType:blob.type});
+    } catch (e) {
+        if (e.code === 'storage/unauthorized') {
+            throw Error('사진 업로드 권한이 없습니다. Plus 구독이 유효한지 확인해 주세요. (시간이 지난 후 다시 시도해 보세요.)');
+        }
+        throw e;
+    }
+    return path;
 }
 export const discardUpload=path=>deleteObject(ref(storage,path));
