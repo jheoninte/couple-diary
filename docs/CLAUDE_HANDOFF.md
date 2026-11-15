@@ -129,3 +129,20 @@ TestFlight 1403에는 현지화가 포함되어 있지 않습니다. main 머지
 ## 운영 전환 (2026-11-14 밤, Claude)
 
 운영 `couple-diary-75157`에 서버를 배포하고 기존 1쌍을 v2로 이전, 운영 리뷰 계정 생성. 결제는 Production 우선 + Sandbox 재검증(심사·TestFlight). 카메라/앨범 버튼·권한 문구, ATT 팝업(`ads-tracking.js`), iPhone 전용. 세부·남은 일: `docs/RELEASE_READINESS.ko.md`. 새 운영 빌드는 아직 TestFlight에 올리지 않았다.
+
+## 2026-11-15 작업 인수인계 (Grok 연계)
+
+- **현재 브랜치**: `main` (기존 `codex/ios-foundation` 작업과 Grok의 Auth/StoreKit/`photoReservations` 커밋 `8a31532..bf2b85e`가 모두 반영됨)
+- **이번 세션 완료 사항**:
+  - **심사·필수 UI 복구**: `나의 공간` 최하단에 심플한 `계정 삭제` 화면(`account-delete.html`, `deletion-ui.js`, `tests/deletion-ui.test.js`), `공휴일 데이터·오픈소스 안내`(`licenses.html`), iOS 전용 `광고 개인정보 설정`(`#adPrivacyBtn`)을 복구함.
+  - **정책 문서 작성 및 URL 연결**: `docs/PRIVACY_POLICY.ko.md`(Storage `US-CENTRAL1` 국외 이전·AdMob·StoreKit 반영), `docs/TERMS_OF_SERVICE.ko.md` 초안을 작성하고 `monetization.js` 링크를 `https://www.comino.app/privacy-p-kr` · `https://www.comino.app/term-p-kr`로 교체함.
+  - **UI/UX 및 버그 수정**:
+    - `firebase-sync.js`: 보관함(`?archive=...`) 열람 시 삭제된 `.quick-write-btn` 참조 오류 수정 및 `.intro-write` 숨김.
+    - `couple-connect.html`/`couple-connect.js`: 커플 미연결 상태에서 `‹ 뒤로` 무한 루프 방지, 연결 해제·최신 글 불러오기·사진 한도 안내를 앱 내 모달/토스트로 통일.
+    - `index.html`/`design-refresh.css`: 달력 좌우 화살표 SVG 중앙 정렬, `나의 공간` 가로 스크롤(`overflow-x: hidden`) 고정, iOS `<input type="date">` 레이아웃 정렬, `#membershipDialog > .save-btn` 커서 수정.
+  - **Grok 커밋 동기화 및 검증**: `main`의 신규 구독 문구 2건(18개 언어)을 `locales/messages-billing.tsv`에 추가하고 `tests/auth-startup.test.cjs`를 네이티브 `localStorage` 우선 persistence에 맞게 갱신함.
+  - **검증 상태**: `npm run locales:coverage`(미번역 0건, `licenses.html` 제외), `npm run check`, `npm test`(75/75), `VITE_ADMOB_LIVE_ADS=true npm run build`, `npx cap sync ios && node scripts/configure-ios.cjs` 모두 통과.
+- **남은 일 (사용자/Grok)**:
+  - Mac 터미널에서 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer bash scripts/release-ios.sh` 실행 후 TestFlight 업로드 및 **COMINO Internal** 그룹 추가.
+  - 실기기에서 사진 업로드(`firestore:rules` 배포 + 필요 시 `firebase deploy --only storage --project couple-diary-75157`), StoreKit 2 Sandbox 구매·복원, AdMob 배너/전면/ATT 및 `나의 공간`·날짜 입력 레이아웃 확인.
+  - `docs/PRIVACY_POLICY.ko.md`, `docs/TERMS_OF_SERVICE.ko.md` 내용을 `comino.app/privacy-p-kr` · `term-p-kr`에 게시.
