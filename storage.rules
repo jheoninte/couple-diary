@@ -26,7 +26,7 @@ service firebase.storage {
     match /couples/{cid}/{uid}/{filename} {
       allow read: if activeMember(cid) || archiveOwner(cid, uid);
       allow create: if resource == null && signedIn() && request.auth.uid == uid && activeMember(cid) && photoSubscription(cid, uid, filename)
-        && validImage() && request.resource.contentType == 'image/jpeg';
+        && validImage();
       // Prevent deletion and re-upload with the same reservation. Server owns lifecycle cleanup.
       allow update, delete: if false;
     }
