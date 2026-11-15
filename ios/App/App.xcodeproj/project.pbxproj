@@ -22,6 +22,7 @@ D1A100000000000000000001 /* DiaryViewController.swift in Sources */ = {isa = PBX
 D1A100000000000000000002 /* DiaryPhotos.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000002; };
 D1A100000000000000000003 /* DiaryPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000003; };
 D1A100000000000000000004 /* DiaryWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000004; };
+D1A100000000000000000005 /* DiaryPhotoCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000005; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@ D1A000000000000000000001 /* DiaryViewController.swift */ = {isa = PBXFileReferen
 D1A000000000000000000002 /* DiaryPhotos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryPhotos.swift; sourceTree = "<group>"; };
 D1A000000000000000000003 /* DiaryPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryPush.swift; sourceTree = "<group>"; };
 D1A000000000000000000004 /* DiaryWeather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryWeather.swift; sourceTree = "<group>"; };
+D1A000000000000000000005 /* DiaryPhotoCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryPhotoCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +83,7 @@ D1A000000000000000000004 /* DiaryWeather.swift */ = {isa = PBXFileReference; las
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+D1A000000000000000000005 /* DiaryPhotoCache.swift */,
 D1A000000000000000000004 /* DiaryWeather.swift */,
 D1A000000000000000000003 /* DiaryPush.swift */,
 D1A000000000000000000002 /* DiaryPhotos.swift */,
@@ -182,6 +185,7 @@ D1A000000000000000000000 /* DiaryStore.swift */,
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+D1A100000000000000000005 /* DiaryPhotoCache.swift in Sources */,
 D1A100000000000000000004 /* DiaryWeather.swift in Sources */,
 D1A100000000000000000003 /* DiaryPush.swift in Sources */,
 D1A100000000000000000002 /* DiaryPhotos.swift in Sources */,

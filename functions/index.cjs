@@ -14,7 +14,15 @@ setGlobalOptions({region:'asia-northeast3',minInstances:0,maxInstances:2,memory:
 const minimalTestflight=process.env.DIARY_TESTFLIGHT_BACKEND==='true';
 const privateKey=minimalTestflight?{value(){throw Error('Billing disabled in internal TestFlight');}}:defineSecret('APPLE_PRIVATE_KEY');
 // Stage writes until all reads finish: Firestore transactions require read-before-write.
-const store={transaction:fn=>db.runTransaction(async native=>{const writes=[];const result=await fn({get:async p=>(await native.get(db.doc(p))).data(),set:(p,v)=>writes.push(()=>native.set(db.doc(p),v)),delete:p=>writes.push(()=>native.delete(db.doc(p)))});writes.forEach(write=>write());return result;}),async photoExists(p){try{const [m]=await getStorage().bucket().file(p).getMetadata();return Number(m.size)<=512*1024&&m.contentType==='image/jpeg';}catch{return false;}},async savePhoto(p,buffer){await getStorage().bucket().file(p).save(buffer,{contentType:'image/jpeg',resumable:false});},async readPhoto(p){const [buffer]=await getStorage().bucket().file(p).download();return buffer;}};
+const store={transaction:fn=>db.runTransaction(async native=>{const writes=[];const result=await fn({get:async p=>(await native.get(db.doc(p))).data(),set:(p,v)=>writes.push(()=>native.set(db.doc(p),v)),delete:p=>writes.push(()=>native.delete(db.doc(p)))});writes.forEach(write=>write());return result;}),async photoExists(p){try{const [m]=await getStorage().bucket().file(p).getMetadata();return Number(m.size)<=512*1024&&m.contentType==='image/jpeg';}catch{return false;}},async savePhoto(p,buffer){await getStorage().bucket().file(p).save(buffer,{contentType:'image/jpeg',resumable:false});},async readPhoto(p){const [buffer]=await getStorage().bucket().file(p).download();return buffer;},
+ // Needs roles/iam.serviceAccountTokenCreator for the function's service account (signBlob). If it is missing the
+ // call fails and the app falls back to readPhoto, so photos keep working.
+ async signPhotos(paths){
+  const expiresAt=Date.now()+15*60000,bucket=getStorage().bucket(),urls={};
+  try{await Promise.all(paths.map(async p=>{[urls[p]]=await bucket.file(p).getSignedUrl({version:'v4',action:'read',expires:expiresAt});}));}
+  catch(e){console.error('Photo URL signing failed: grant Service Account Token Creator to the functions service account',e.code||e.name);throw new HttpsError('unavailable','사진 주소를 만들지 못했습니다.');}
+  return {urls,expiresAt};
+ }};
 // Push is off until PUSH_ENABLED=true and the APNs key secret exist, so deploys keep working without them.
 const pushEnabled=process.env.PUSH_ENABLED==='true';
 const apnsKey=pushEnabled?defineSecret('APNS_AUTH_KEY'):null;
@@ -32,7 +40,7 @@ const service=createService(store,{notify});
 const deletionRequests=require('./deletion-requests.cjs').createDeletionRequests(store);
 async function callable(fn){try{return await fn();}catch(e){if(e instanceof HttpsError)throw e;if(e instanceof DomainError)throw new HttpsError(e.code,e.message,e.details);console.error('Server operation failed',e.code||e.name);throw new HttpsError('internal','요청 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');}}
 exports.diary=onCall({timeoutSeconds:540,secrets:apnsKey?[apnsKey]:[]},req=>callable(()=>{
- if(process.env.DIARY_WRITES_ENABLED==='false'&&!['initialize','membership','readPhoto','pushUnregister'].includes(req.data?.action))throw new HttpsError('unavailable','서버 점검 중입니다. 작성 중인 초안을 보관하고 잠시 후 다시 시도해주세요.');
+ if(process.env.DIARY_WRITES_ENABLED==='false'&&!['initialize','membership','readPhoto','photoUrls','pushUnregister'].includes(req.data?.action))throw new HttpsError('unavailable','서버 점검 중입니다. 작성 중인 초안을 보관하고 잠시 후 다시 시도해주세요.');
  if(process.env.PHOTO_UPLOADS_ENABLED==='false'&&(req.data?.action==='reservePhoto'||req.data?.action==='uploadPhoto'))throw new HttpsError('unavailable','사진 업로드를 점검 중입니다. 잠시 후 다시 시도해주세요.');
  return service.execute(req.auth?.uid,req.data);
 }));
@@ -124,7 +132,7 @@ exports.cleanupPhotos=onSchedule({schedule:'every 1 hours',timeZone:'Asia/Seoul'
  for(const row of rows.docs){
   const r=row.data(),cid=row.ref.parent.parent.id,filename=row.id;
   if(!/^[A-Za-z0-9_-]+$/.test(r.uid)||!/^[a-f0-9-]+\.jpg$/.test(filename))continue;
-  try{await getStorage().bucket().file(`couples/${cid}/${r.uid}/${filename}`).delete({ignoreNotFound:true});await row.ref.delete();}
+  try{const path=`couples/${cid}/${r.uid}/${filename}`;await getStorage().bucket().file(path).delete({ignoreNotFound:true});await getStorage().bucket().file(path.replace(/\.jpg$/,'.t.jpg')).delete({ignoreNotFound:true});await row.ref.delete();}
   catch(e){console.error('Photo cleanup will retry',e.code||e.name);}
  }
  if(rows.size===200)console.warn('Photo cleanup batch full: check backlog age and adjust capacity.');

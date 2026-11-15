@@ -20,6 +20,31 @@ function weatherOf(v,{city=false}={}){
  if(city){row.city=typeof v.city==='string'?v.city.trim().slice(0,60):'';if(temp(v.high)!==null)row.high=temp(v.high);if(temp(v.low)!==null)row.low=temp(v.low);}
  return row;
 }
+// Photos are immutable JPEGs named by UUID. A thumbnail (album grid) sits next to the original as <uuid>.t.jpg.
+const PHOTO_URL_BATCH=60,THUMB_MAX=96*1024,SIGN=Symbol('sign');
+const thumbOf=path=>path.replace(/\.jpg$/,'.t.jpg');
+function jpeg(dataUrl,max){
+ const match=typeof dataUrl==='string'&&dataUrl.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);if(!match)return null;
+ const buffer=Buffer.from(match[1],'base64');
+ return buffer.length&&buffer.length<=max&&buffer[0]===0xff&&buffer[1]===0xd8&&buffer[2]===0xff?buffer:null;
+}
+// Same rules as Storage: members of the active space, or the owner of a photo in a closed (archived) space.
+async function canReadPhoto(tx,uid,user,path,couples=new Map()){
+ if(typeof path!=='string'||!path||path.length>300||path.includes('..'))return false;
+ const read=async cid=>{if(!couples.has(cid))couples.set(cid,await tx.get(`couples/${cid}`));return couples.get(cid);};
+ const current=path.match(/^couples\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/[a-f0-9-]+(?:\.t)?\.jpg$/);
+ if(current){
+  const [,cid,owner]=current,c=await read(cid);
+  if(!c||![c.user1,c.user2].includes(uid))return false;
+  return (c.status==='active'&&user.coupleId===cid)||(c.status==='closed'&&owner===uid);
+ }
+ const legacy=path.match(/^photos\/([A-Za-z0-9_-]+)\/[^/]+$/);
+ if(!legacy)return false;
+ if(legacy[1]===uid)return true;
+ if(!user.coupleId)return false;
+ const c=await read(id(user.coupleId));
+ return c?.status==='active'&&[c.user1,c.user2].includes(uid)&&[c.user1,c.user2].includes(legacy[1]);
+}
 const PHOTO_DAILY=6,PHOTO_MONTHLY=90,PHOTO_ATTEMPTS=30;
 function quota(q,time){const day=new Date(time+9*3600000).toISOString().slice(0,10),month=day.slice(0,7);q=q||{};
  // Older documents counted every attempt (including failed ones) as usage; carry those over only as attempts.
@@ -67,24 +92,17 @@ function createService(store,{now=Date.now,notify}={}){
     events.push({kind:'connected',to:c.user1,coupleId:invite.coupleId});return {coupleId:invite.coupleId};
    }
    if(action==='readPhoto'){
-    check(typeof data.path==='string'&&data.path.length>0&&data.path.length<=300&&!data.path.includes('..'));
-    let allowed=false;
-    const coupleMatch=data.path.match(/^couples\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/([a-f0-9-]+\.jpg)$/);
-    const legacyMatch=data.path.match(/^photos\/([A-Za-z0-9_-]+)\/([^/]+)$/);
-    if(coupleMatch){
-     const [,targetCid,ownerUid]=coupleMatch,targetCouple=await tx.get(`couples/${targetCid}`);
-     if(targetCouple&&[targetCouple.user1,targetCouple.user2].includes(uid)){
-      if(targetCouple.status==='active'&&user.coupleId===targetCid)allowed=true;
-      else if(targetCouple.status==='closed'&&ownerUid===uid)allowed=true;
-     }
-    }else if(legacyMatch){
-     const [,ownerUid]=legacyMatch;
-     if(ownerUid===uid)allowed=true;
-     else if(user.coupleId){const uc=await tx.get(`couples/${id(user.coupleId)}`);if(uc?.status==='active'&&[uc.user1,uc.user2].includes(uid)&&[uc.user1,uc.user2].includes(ownerUid))allowed=true;}
-    }
-    if(!allowed)fail('permission-denied','사진에 접근할 수 없습니다.');
+    check(typeof data.path==='string');
+    if(!await canReadPhoto(tx,uid,user,data.path))fail('permission-denied','사진에 접근할 수 없습니다.');
     const buffer=await store.readPhoto(data.path);
     return {dataUrl:`data:image/jpeg;base64,${buffer.toString('base64')}`};
+   }
+   if(action==='photoUrls'){
+    // Access is checked here; the bytes are then downloaded straight from Storage with short-lived signed URLs.
+    check(Array.isArray(data.paths)&&data.paths.length>0&&data.paths.length<=PHOTO_URL_BATCH&&data.paths.every(p=>typeof p==='string'));
+    const couples=new Map(),allowed=[];
+    for(const p of new Set(data.paths))if(await canReadPhoto(tx,uid,user,p,couples))allowed.push(p);
+    return {[SIGN]:allowed};
    }
    const cid=id(data.coupleId),cp=`couples/${cid}`,c=await tx.get(cp);
    if(!c||c.status!=='active'||c.schemaVersion!==2||user.coupleId!==cid||![c.user1,c.user2].includes(uid))fail('permission-denied','이 일기장에 접근할 수 없습니다.');
@@ -133,13 +151,13 @@ function createService(store,{now=Date.now,notify}={}){
     if(q.daily>=PHOTO_DAILY||q.monthly>=PHOTO_MONTHLY||q.attempts>=PHOTO_ATTEMPTS)fail('resource-exhausted','사진 업로드 한도에 도달했습니다.');
     const filename=randomUUID()+'.jpg',expiresAt=time+10*60000;
     if(action==='uploadPhoto'){
-     const match=typeof data.dataUrl==='string'&&data.dataUrl.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);
-     if(!match)fail('invalid-argument','사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
-     const buffer=Buffer.from(match[1],'base64');
-     if(!buffer.length||buffer.length>512*1024||buffer[0]!==0xff||buffer[1]!==0xd8||buffer[2]!==0xff)fail('invalid-argument','사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
+     const buffer=jpeg(data.dataUrl,512*1024);
+     if(!buffer)fail('invalid-argument','사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
+     // The thumbnail is optional (older app versions and failed resizes upload only the original).
+     const thumb=data.thumbUrl===undefined?null:jpeg(data.thumbUrl,THUMB_MAX);
      const path=`couples/${cid}/${uid}/${filename}`;
-     await store.savePhoto(path,buffer);
-     tx.set(qp,{...q,attempts:q.attempts+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false});return {path,filename};
+     await store.savePhoto(path,buffer);if(thumb)await store.savePhoto(thumbOf(path),thumb);
+     tx.set(qp,{...q,attempts:q.attempts+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false,...(thumb?{thumb:true}:{})});return {path,filename,thumb:!!thumb};
     }
     tx.set(qp,{...q,attempts:q.attempts+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false});return {filename};
    }
@@ -149,10 +167,11 @@ function createService(store,{now=Date.now,notify}={}){
     check(Number.isSafeInteger(data.revision)&&data.revision>=0);if((old?.revision||0)!==data.revision)fail('aborted','다른 화면에서 수정되었습니다. 최신 일기를 다시 불러와주세요.');
     check(Array.isArray(data.photos)&&data.photos.length<=3&&new Set(data.photos).size===data.photos.length);const content=text(data.content,20000),mood=text(data.mood,40);
     const newPhotos=data.photos.filter(p=>!old?.photos?.includes(p));
+    const thumbs=(old?.thumbs||[]).filter(p=>data.photos.includes(p));
     if(newPhotos.length){const qp=`uploadQuotas/${uid}`,q=quota(await tx.get(qp),time);if(q.daily+newPhotos.length>PHOTO_DAILY||q.monthly+newPhotos.length>PHOTO_MONTHLY)fail('resource-exhausted','사진 업로드 한도에 도달했습니다.');tx.set(qp,{...q,daily:q.daily+newPhotos.length,monthly:q.monthly+newPhotos.length});}
     for(const p of newPhotos){check(typeof p==='string');const prefix=`couples/${cid}/${uid}/`;if(!p.startsWith(prefix)||!/^[a-f0-9-]+\.jpg$/.test(p.slice(prefix.length)))fail('permission-denied','유효하지 않은 사진입니다.');
      const rp=`couples/${cid}/photoReservations/${p.slice(prefix.length)}`,r=await tx.get(rp);if(!r||r.uid!==uid||r.attached||r.expiresAt<=time||!(c.premiumUntil>time))fail('permission-denied','사진 업로드 권한이 만료되었습니다.');
-     if(store.photoExists&&!await store.photoExists(p))fail('failed-precondition','업로드한 사진을 확인할 수 없습니다.');tx.delete(rp);}
+     if(store.photoExists&&!await store.photoExists(p))fail('failed-precondition','업로드한 사진을 확인할 수 없습니다.');if(r.thumb)thumbs.push(p);tx.delete(rp);}
     for(const p of old?.photos||[]){
      if(!data.photos.includes(p)&&p.startsWith(`couples/${cid}/${uid}/`)){
       const filename=p.split('/').at(-1);tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt:time,createdAt:time,attached:false});
@@ -160,7 +179,7 @@ function createService(store,{now=Date.now,notify}={}){
     }
     // The day's weather is recorded once, when the entry is first written; edits keep it.
     const dayWeather=old?.weather||weatherOf(data.weather);
-    const entry={...(old||{}),...(dayWeather?{weather:dayWeather}:{}),author:uid,date:data.date,content,mood,photos:data.photos,revision:data.revision+1,comments:old?.comments||[],likedBy:old?.likedBy||[],createdAt:old?.createdAt||time,updatedAt:time,deletedAt:null};
+    const entry={...(old||{}),...(dayWeather?{weather:dayWeather}:{}),thumbs,author:uid,date:data.date,content,mood,photos:data.photos,revision:data.revision+1,comments:old?.comments||[],likedBy:old?.likedBy||[],createdAt:old?.createdAt||time,updatedAt:time,deletedAt:null};
     // Announce a diary to the partner once; later edits, deletes and restores stay quiet.
     const partner=[c.user1,c.user2].find(u=>u&&u!==uid);
     if(partner&&!old?.announcedAt){entry.announcedAt=time;events.push({kind:'diary',to:partner,coupleId:cid,author:uid,date:data.date,name:c.settings?.[uid]?.displayName,thread:`diary-${cid}`});}
@@ -193,6 +212,8 @@ function createService(store,{now=Date.now,notify}={}){
    tx.set(ep,{...old,comments:action==='commentDelete'?comments.filter(c=>c.id!==key):comments.map(c=>c.id===key?{...c,text:text(data.text,1000),updatedAt:time}:c)});return {};
   });
   if(events.length&&notify)await notify(events).catch(()=>{});
+  // Signing happens after the transaction so a retried transaction never signs twice.
+  if(result&&result[SIGN])return store.signPhotos?await store.signPhotos(result[SIGN]):{urls:{},expiresAt:0};
   return result;
  }
  return {execute};

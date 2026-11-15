@@ -1,6 +1,7 @@
 import {auth, pageURL} from './firebase-config.js';
 import {onAuthStateChanged, signOut} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import * as api from './diary-api.js';
+import {claimPhotoCache,clearPhotoCache} from './photo-cache.js';
 import {validDate, localDate, LIMITS} from './web-core.js';
 import {t} from './i18n.js';
 import './push-client.js';
@@ -133,7 +134,7 @@ window.diaryActions={
     toggleLike(date,type='partner'){const e=target(date,type);return action(`like-${e.author}-${date}`,null,()=>api.call('like',{coupleId:session.coupleId,author:e.author,date,liked:!(e.likedBy||[]).includes(session.uid)}));}
 };
 document.getElementById('loadOlderBtn').onclick=()=>{const y=window.scrollY;pageSize+=100;subscribeEntries();setTimeout(()=>window.scrollTo(0,y),50);};
-document.getElementById('logoutBtn').onclick=async()=>{ui.persistDraft();try{await window.diaryPush?.signOut();await signOut(auth);}catch(e){fail(e);}};
+document.getElementById('logoutBtn').onclick=async()=>{ui.persistDraft();try{await window.diaryPush?.signOut();await clearPhotoCache();await signOut(auth);}catch(e){fail(e);}};
 window.addEventListener('offline',()=>ui.status('오프라인입니다. 작성 중인 초안은 이 기기에 보관됩니다.','info'));
 
 async function waitForAuthReady() {
@@ -147,7 +148,7 @@ onAuthStateChanged(auth, async user => {
     stops.forEach(stop=>stop());stops=[];entryStop?.();generation++;ready=false;entriesLoaded=false;editorInitialized=false;records.clear();document.getElementById('authGate').hidden=false;await api.clearPhotos();
 
     const readyUser = await waitForAuthReady();
-    if(!readyUser){location.replace(pageURL('login.html'));return;}
+    if(!readyUser){await clearPhotoCache();location.replace(pageURL('login.html'));return;}
 
     let attempt = 0;
     const maxAttempts = 2;
@@ -156,7 +157,7 @@ onAuthStateChanged(auth, async user => {
             const archiveId = new URLSearchParams(location.search).get('archive');
             const initial = archiveId ? {coupleId: archiveId} : await api.call('initialize');
             if(!initial.coupleId){location.replace(pageURL('couple-connect.html'));return;}
-            session={uid:readyUser.uid,coupleId:initial.coupleId,archive:!!archiveId};ui.session(session);couple=await api.getCouple(session.coupleId);
+            session={uid:readyUser.uid,coupleId:initial.coupleId,archive:!!archiveId};if(!session.archive)await claimPhotoCache(`${session.uid}/${session.coupleId}`);ui.session(session);couple=await api.getCouple(session.coupleId);
             window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
             document.getElementById('coupleConnectionLink').href=pageURL('couple-connect.html');
             const deletionLink=document.getElementById('accountDeletionLink');if(deletionLink)deletionLink.href=pageURL('account-delete.html');

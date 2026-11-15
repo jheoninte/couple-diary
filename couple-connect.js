@@ -1,4 +1,5 @@
 import {auth,pageURL} from './firebase-config.js';
+import {clearPhotoCache} from './photo-cache.js';
 import {onAuthStateChanged,signOut,sendEmailVerification,reload} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import * as api from './diary-api.js';
 import {localDate} from './web-core.js';
@@ -51,10 +52,10 @@ $('shareInviteBtn').onclick=()=>run(async()=>{if(!navigator.share){await copyInv
 const closeDisconnectConfirm=()=>{const modal=$('confirmModal');if(modal)modal.classList.remove('active');};
 $('confirmCancelBtn')?.addEventListener('click',closeDisconnectConfirm);
 $('confirmModal')?.addEventListener('click',e=>{if(e.target.id==='confirmModal')closeDisconnectConfirm();});
-$('confirmDeleteBtn')?.addEventListener('click',()=>{closeDisconnectConfirm();run(async()=>{await api.call('disconnect',{coupleId});location.reload();});});
+$('confirmDeleteBtn')?.addEventListener('click',()=>{closeDisconnectConfirm();run(async()=>{await api.call('disconnect',{coupleId});await clearPhotoCache();location.reload();});});
 window.disconnectCouple=()=>{const modal=$('confirmModal');if(modal){modal.classList.add('active');$('confirmCancelBtn')?.focus();}};
 window.goToDiary=()=>{if(!coupleId){message('일기장을 만들거나 받은 초대 코드로 연결해주세요.',true);return;}location.href=pageURL('index.html');};
-$('connectLogoutBtn').onclick=()=>run(()=>signOut(auth));
+$('connectLogoutBtn').onclick=()=>run(async()=>{await clearPhotoCache();await signOut(auth);});
 $('verifyEmailBtn').onclick=()=>run(async()=>{await withTimeout(sendEmailVerification(user));verifyUntil=Date.now()+60000;message('이메일 확인 안내를 보냈어요. 스팸함도 확인해주세요. 확인 전에도 일기장을 시작할 수 있어요.');});
 $('checkEmailBtn').onclick=()=>run(async()=>{await withTimeout(reload(user));if(user.emailVerified){$('verifyEmailBtn').hidden=true;$('checkEmailBtn').hidden=true;message('이메일 확인이 완료됐어요.');}else message('아직 확인되지 않았어요. 메일의 확인 링크를 누른 뒤 다시 확인해주세요.');});
 window.setInterval(()=>{controls();if(currentCouple?.inviteCode&&currentCouple.inviteExpiresAt<=Date.now()){$('codeExpiry').textContent='초대 코드가 만료됐어요. 새 코드를 만들어주세요.';}},1000);

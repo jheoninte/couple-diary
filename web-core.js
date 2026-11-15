@@ -19,6 +19,8 @@ export function escapeHTML(value) {return String(value ?? '').replace(/[&<>"']/g
 export function safePhotoURL(value) {
     if (typeof value !== 'string') return '';
     if (/^blob:/.test(value) || /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value)) return value;
+    // Photos cached on the iPhone are served from the app's own file scheme.
+    if (/^capacitor:\/\/localhost\/_capacitor_file_\/[^"'<>\s]+$/.test(value)) return value;
     return '';
 }
 export function readJSON(storage, key, fallback) {

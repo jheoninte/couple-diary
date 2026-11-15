@@ -40,3 +40,15 @@ export async function preparePhoto(file) {
     throw Error('사진을 압축하지 못했습니다. 다른 사진을 선택해주세요.');
   } finally { bitmap.close(); }
 }
+
+// Album-grid thumbnail: long edge 400px, at most 96 KB (the server limit).
+export const THUMB_POLICY = Object.freeze({ maxEdge: 400, maxBytes: 96 * 1024 });
+export async function prepareThumbnail(dataUrl) {
+  const image = new Image(); image.src = dataUrl; await image.decode();
+  const size = resizedDimensions(image.naturalWidth, image.naturalHeight, THUMB_POLICY.maxEdge);
+  const canvas = document.createElement('canvas'); canvas.width = size.width; canvas.height = size.height;
+  const ctx = canvas.getContext('2d', { alpha: false });
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size.width, size.height); ctx.drawImage(image, 0, 0, size.width, size.height);
+  for (const quality of [0.78, 0.66, 0.54]) { const result = canvas.toDataURL('image/jpeg', quality); if (dataURLBytes(result) <= THUMB_POLICY.maxBytes) return result; }
+  throw Error('thumbnail too large');
+}

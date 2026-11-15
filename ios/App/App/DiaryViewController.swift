@@ -7,6 +7,7 @@ class DiaryViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(DiaryPhotos())
         bridge?.registerPluginInstance(DiaryPush())
         bridge?.registerPluginInstance(DiaryWeather())
+        bridge?.registerPluginInstance(DiaryPhotoCache())
     }
 
     override func viewDidLoad() {

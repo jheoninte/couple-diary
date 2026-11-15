@@ -25,6 +25,8 @@ function uiIcon(name) {
         // New entries start with the first mood (smiling face) already chosen.
         const DEFAULT_MOOD = '😊';
         let selectedMoodValue = DEFAULT_MOOD;
+        // Photos that have a small album version (<uuid>.t.jpg); older photos only have the original.
+        let thumbPaths = new Set();
         let autosaveTimer = null;
         let startDate = localDate();
         let myIcon = '🐶';
@@ -703,7 +705,7 @@ function uiIcon(name) {
         const item=document.createElement('div');item.className='preview-item';
         const img=document.createElement('img');img.alt='첨부 사진';
         if(photo.startsWith('data:')||photo.startsWith('blob:'))img.src=safePhotoURL(photo);
-        else window.diaryActions?.photoURL(photo).then(url=>{img.src=url;}).catch(()=>{img.alt='사진을 불러오지 못했습니다';});
+        else window.diaryActions?.photoURL(photo,{thumb:thumbPaths.has(photo)}).then(url=>{img.src=url;}).catch(()=>{img.alt='사진을 불러오지 못했습니다';});
         const button=document.createElement('button');button.className='preview-remove';button.textContent='×';button.type='button';button.setAttribute('aria-label','사진 삭제');
         button.onclick=()=>removePhoto(index);item.append(img,button);preview.append(item);
     });
@@ -749,7 +751,7 @@ function uiIcon(name) {
             } else {
                 grid.innerHTML = allPhotos.map(photo => 
                     `<div class="memory-item">
-                        <img data-photo-path="${escapeHTML(photo.path)}" alt="${escapeHTML(t('{date} 함께한 순간',{date:photo.date}))}">
+                        <img data-photo-path="${escapeHTML(photo.path)}"${thumbPaths.has(photo.path)?' data-photo-thumb="1"':''} alt="${escapeHTML(t('{date} 함께한 순간',{date:photo.date}))}">
                         ${photo.date?`<span class="memory-date">${escapeHTML(photo.date.replaceAll('-','.'))}</span>`:''}
                     </div>`
                 ).join('');
@@ -895,7 +897,7 @@ function uiIcon(name) {
                 for(const change of changes){
                     const image=change.target;image.dataset.inView=String(change.isIntersecting);
                     if(!change.isIntersecting||image.getAttribute('src'))continue;
-                    window.diaryActions?.photoURL(image.dataset.photoPath).then(url=>{
+                    window.diaryActions?.photoURL(image.dataset.photoPath,{thumb:image.dataset.photoThumb==='1'}).then(url=>{
                         if(image.isConnected)image.src=url;
                     }).catch(()=>{image.alt='사진을 불러오지 못했습니다';window.diaryUI.status('일부 사진을 불러오지 못했습니다. 기록과 사진 경로는 유지됩니다.','error');});
                 }
@@ -972,6 +974,7 @@ window.diaryUI={
     state(){return {entries,partnerEntries,anniversaries,startDate,myIcon,currentTheme,appTitle,myDisplayName,selectedAnniversaryIcon};},
     render(data){
         entries=data.entries;partnerEntries=data.partnerEntries;anniversaries=data.anniversaries||[];startDate=data.startDate||localDate();
+        thumbPaths=new Set([...Object.values(entries),...Object.values(partnerEntries)].flatMap(e=>e.thumbs||[]));
         const mine=data.settings?.[session.uid]||{},partner=data.settings?.[data.partnerUid]||{};
         myIcon=mine.icon||'🐶';partnerIcon=partner.icon||'🐱';currentTheme=mine.theme||'pink';appTitle=mine.appTitle||'우리의 공간';
         myDisplayName=mine.displayName||'나';partnerDisplayName=partner.displayName||'파트너';

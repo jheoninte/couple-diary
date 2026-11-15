@@ -2,6 +2,8 @@ import { auth, db, storage, functions, pageURL } from './firebase-config.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-functions.js';
 import { doc, getDoc, getDocFromServer, collection, query, orderBy, limit, startAfter, where, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { ref, getBlob } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
+import { isNative, nativePhoto, webCached, thumbOf } from './photo-cache.js';
+import { prepareThumbnail } from './image-processing.js';
 export const call=async(action,data={})=>{
     try{return (await httpsCallable(functions,'diary',{timeout:['initialize','disconnect'].includes(action)?540000:20000})({action,...data})).data;}
     catch(error){throw error;}
@@ -25,23 +27,29 @@ export async function allEntries(cid,archive=false) {
 }
 const photoCache=new Map();
 let cachedBytes=0;
-export async function photoURL(path) {
+// Memory layer over the persistent cache (photo-cache.js): one request per photo per session.
+// thumb: use the small album version when the entry has one, falling back to the original.
+export async function photoURL(path,{thumb=false}={}) {
+    if(thumb)try{return await photoURL(thumbOf(path));}catch{}
     if(photoCache.has(path))return photoCache.get(path).promise;
     const item={size:0,url:null,isBlob:false,promise:null};
     const pending=(async()=>{
         let url,size=0,isBlob=false;
-        try {
-            // In the iOS WKWebView the Storage download can stall without settling, so the app reads through the
-            // diary function there; browsers try Storage first and fall back after a timeout.
-            if(window.Capacitor?.isNativePlatform?.())throw Object.assign(Error('native photo read'),{code:'native'});
-            const blob=await Promise.race([getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024),
-                new Promise((_,reject)=>setTimeout(()=>reject(Object.assign(Error('photo timeout'),{code:'timeout'})),8000))]);
+        if(isNative()){
+            // iOS: on-disk cache, then one signed-URL batch per screen, then the server proxy.
+            url=await nativePhoto(path,call);size=url.startsWith('data:')?url.length:0;
+        } else {
+            const blob=await webCached(path,async()=>{
+                try {
+                    return await Promise.race([getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024),
+                        new Promise((_,reject)=>setTimeout(()=>reject(Object.assign(Error('photo timeout'),{code:'timeout'})),8000))]);
+                } catch (e) {
+                    if (e?.code?.endsWith('object-not-found')) throw e;
+                    const { dataUrl } = await call('readPhoto', { path });
+                    return (await fetch(dataUrl)).blob();
+                }
+            });
             size=blob.size;url=URL.createObjectURL(blob);isBlob=true;
-        } catch (e) {
-            if (e?.code?.endsWith('object-not-found')) throw e;
-            const { dataUrl } = await call('readPhoto', { path });
-            url = dataUrl;
-            size = dataUrl.length;
         }
         item.size=size;item.url=url;item.isBlob=isBlob;cachedBytes+=item.size;
         for(const [key,old]of photoCache){if(cachedBytes<=64*1024*1024)break;if(key!==path&&old.url){if(old.isBlob)URL.revokeObjectURL(old.url);cachedBytes-=old.size;photoCache.delete(key);}}
@@ -57,7 +65,9 @@ export async function clearPhotos() {
 export async function uploadPhoto(cid,dataURL) {
     const response=await fetch(dataURL),blob=await response.blob();
     if(blob.size>512*1024||!/^image\/(jpeg|png|webp)$/.test(blob.type))throw Error('사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
-    const { path } = await call('uploadPhoto', { coupleId: cid, dataUrl: dataURL });
+    // A small copy for the album grid; the upload still succeeds without it.
+    const thumbUrl = await prepareThumbnail(dataURL).catch(() => undefined);
+    const { path } = await call('uploadPhoto', { coupleId: cid, dataUrl: dataURL, ...(thumbUrl ? { thumbUrl } : {}) });
     return path;
 }
 export const discardUpload=()=>Promise.resolve();
