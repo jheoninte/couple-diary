@@ -12,6 +12,6 @@ function mount(){for(const select of document.querySelectorAll('[data-language-p
  const confirmOriginal=window.confirm.bind(window);window.confirm=message=>confirmOriginal(t(String(message)));
  window.alert=message=>showToast(t(String(message)));
 }
-// alert() never blocks: it shows a toast that fades out after 2.5s.
-function showToast(text){let el=document.getElementById('appToast');if(!el){el=document.createElement('div');el.id='appToast';el.className='app-toast';el.setAttribute('role','status');el.setAttribute('data-i18n-ignore','');document.body.append(el);}el.textContent=text;el.classList.add('show');clearTimeout(el._hideTimer);el._hideTimer=setTimeout(()=>el.classList.remove('show'),2500);}
+// alert() never blocks: it shows a toast that fades out after 3s.
+function showToast(text){let el=document.getElementById('appToast');if(!el){el=document.createElement('div');el.id='appToast';el.className='app-toast';el.setAttribute('role','status');el.setAttribute('data-i18n-ignore','');document.body.append(el);}el.textContent=text;el.classList.add('show');clearTimeout(el._hideTimer);el._hideTimer=setTimeout(()=>el.classList.remove('show'),3000);}
 window.diaryI18n={t,getLocale,setLanguage,fmt};window.addEventListener('languagechange',()=>{if(preference==='system')update();});window.addEventListener('storage',event=>{if(event.key===storageKey){preference=event.newValue||'system';update();}});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
