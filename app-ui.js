@@ -1,5 +1,6 @@
 import holidays from './holidays-data.js';
 import './monetization.js';
+import './keyboard-aware.js';
 import {t,fmt} from './i18n.js';
 import { preparePhoto } from './image-processing.js';
 import {localDate, validDate, dayNumber, togetherDays, escapeHTML, safePhotoURL, readJSON, draftKey, anniversaryTarget, LIMITS} from './web-core.js';

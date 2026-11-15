@@ -104,3 +104,7 @@ dialog,
 .native-ios.diary-page::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);background:#fff;z-index:900;pointer-events:none}
 /* Anniversary add button: the + follows the theme like its label. */
 .add-anniversary-btn,.add-anniversary-btn *{color:var(--primary)}
+
+/* Typing: the tab bar would otherwise float above the iOS keyboard (keyboard-aware.js). */
+html.keyboard-open .tab-nav{display:none}
+html.keyboard-open .app-toast{bottom:calc(16px + env(safe-area-inset-bottom))}
