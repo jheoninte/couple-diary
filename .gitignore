@@ -24,3 +24,6 @@ functions/.secret.local
 .backups/
 *.backup.json
 build/
+
+# macOS Finder metadata
+.DS_Store
