@@ -72,3 +72,10 @@ test('iOS project registers the disk cache plugin',()=>{
  assert.match(read('scripts/configure-ios.cjs'),/'DiaryPhotoCache\.swift'/);
  const swift=read('ios/App/App/DiaryPhotoCache.swift');assert.match(swift,/1500 \* 1024 \* 1024/);assert.match(swift,/cachesDirectory/);
 });
+test('the native plugin can be awaited (Capacitor plugins answer `then` and would hang an await)',async()=>{
+ const {wrapPlugin}=await import('../photo-cache.js');
+ // Same shape as a Capacitor plugin proxy: every property, including `then`, is a native method.
+ const proxy=new Proxy({},{get:(_,k)=>()=>k==='lookup'?Promise.resolve({files:{a:'/x'}}):Promise.reject(Error(`${String(k)} not implemented`))});
+ const wrapped=await Promise.race([(async()=>wrapPlugin(proxy))(),new Promise((_,r)=>setTimeout(()=>r(Error('hung')),500))]);
+ assert.deepEqual(await wrapped.lookup({paths:['a']}),{files:{a:'/x'}});
+});

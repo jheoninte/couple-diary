@@ -9,10 +9,15 @@ const BATCH = 60, BATCH_DELAY = 25;
 const OWNER_KEY = 'diary.photoCache.owner.v1', INDEX_KEY = 'diary.photoCache.index.v1', WEB_CACHE = 'diary-photos-v1';
 
 const isNative = () => !!globalThis.window?.Capacitor?.isNativePlatform?.();
+// A Capacitor plugin object answers every property as a native method, including `then`. Returning it from an
+// async function makes `await` treat it as a promise and wait forever, so expose plain functions instead.
+export function wrapPlugin(native) {
+  return { lookup: o => native.lookup(o), fetch: o => native.fetch(o), save: o => native.save(o), clear: () => native.clear() };
+}
 let nativePlugin = null;
 async function plugin() {
   if (!isNative()) return null;
-  if (!nativePlugin) { const { registerPlugin } = await import('@capacitor/core'); nativePlugin = registerPlugin('DiaryPhotoCache'); }
+  if (!nativePlugin) { const { registerPlugin } = await import('@capacitor/core'); nativePlugin = wrapPlugin(registerPlugin('DiaryPhotoCache')); }
   return nativePlugin;
 }
 
