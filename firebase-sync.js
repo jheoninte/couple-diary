@@ -78,7 +78,16 @@ window.diaryActions={
             try{
                 const photos=[];
                 for(const photo of editor.photos){if(photo.startsWith('data:')){const hit=uploadCache.get(photo);const path=hit&&Date.now()-hit.at<8*60000?hit.path:await api.uploadPhoto(session.coupleId,photo);if(path!==hit?.path)uploadCache.set(photo,{path,at:Date.now()});uploaded.push(path);photos.push(path);}else photos.push(photo);}
-                const result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos});committed=true;for(const photo of editor.photos)uploadCache.delete(photo);
+                let result;
+                try{result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos});}
+                catch(e){
+                    // Only this author writes this entry, so a revision mismatch means an older copy (stale draft or
+                    // another device of the same user). Retry once against the server's latest revision.
+                    if(!e.code?.endsWith('aborted'))throw e;
+                    const latest=await api.getEntry(session.coupleId,editor.date);
+                    result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos,revision:latest?.revision||0});
+                }
+                committed=true;for(const photo of editor.photos)uploadCache.delete(photo);
                 records.set(`${session.uid}_${editor.date}`,result.entry);
                 const unchanged=JSON.stringify(ui.editor())===JSON.stringify(editor);
                 if(unchanged)ui.clearDraft(editor.date);else{ui.updateRevision(editor.date,result.entry.revision,editor.revision);ui.persistDraft();}
