@@ -106,7 +106,7 @@ window.diaryActions={
     deleteEntry(date){const entry=target(date,'my');window.showConfirmModal('일기를 삭제할까요?','삭제한 일기는 다시 볼 수 없습니다.',()=>action(`delete-${date}`,null,()=>api.call('deleteEntry',{coupleId:session.coupleId,date,revision:entry.revision})),'🗑️');},
     saveSettings(){return action('settings','saveSettingsBtn',async()=>{
         const state=ui.state(),settings={icon:state.myIcon,theme:state.currentTheme,appTitle:document.getElementById('appTitleInput').value.trim()||'우리의 공간',displayName:document.getElementById('displayNameInput').value.trim()||'나'};
-        await api.call('settings',{coupleId:session.coupleId,settings,startDate:document.getElementById('startDateInput').value});
+        await api.call('settings',{coupleId:session.coupleId,settings,startDate:document.getElementById('startDateInput').value,birthDate:document.getElementById('birthDateInput')?.value||''});
     });},
     saveAnniversary(){return action('anniversary','saveAnniversaryBtn',async()=>{
         const data={coupleId:session.coupleId,name:document.getElementById('anniversaryName').value.trim(),date:document.getElementById('anniversaryDate').value,icon:ui.state().selectedAnniversaryIcon,recurring:document.getElementById('anniversaryRecurring').checked},key=JSON.stringify(data);
@@ -165,7 +165,7 @@ onAuthStateChanged(auth, async user => {
                 if(!value||(!session.archive&&value.status!=='active')){ui.persistDraft();location.replace(pageURL('couple-connect.html'));return;}
                 couple=value;render().catch(fail);window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
             },fail));
-            if(!session.archive)stops.push(api.watchUser(value=>{if(value.coupleId!==session.coupleId){ui.persistDraft();location.replace(pageURL('couple-connect.html'));}},fail));
+            if(!session.archive)stops.push(api.watchUser(value=>{ui.setBirthDate(value.birthDate||'');if(value.coupleId!==session.coupleId){ui.persistDraft();location.replace(pageURL('couple-connect.html'));}},fail));
             subscribeEntries();
             return;
         } catch(e) {

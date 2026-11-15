@@ -5,3 +5,5 @@ exports.diary = backend.diary;
 exports.accountDeletion = backend.accountDeletion;
 exports.appleBilling = backend.appleBilling;
 exports.appleNotifications = backend.appleNotifications;
+// Hourly reminder pushes exist only when PUSH_ENABLED=true (needs Cloud Scheduler).
+if (backend.pushReminders) exports.pushReminders = backend.pushReminders;

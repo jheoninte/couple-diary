@@ -1,7 +1,9 @@
 const crypto=require('node:crypto');
+const {validTimeZone}=require('./reminders.cjs');
 const {render}=require('./push-messages.cjs');
 // Which preference turns each kind off. "connected" is a one-time event the inviter is waiting for.
-const PREFERENCE={diary:'diary',like:'reactions',comment:'reactions',reply:'reactions'};
+// Subscription notices (plusStarted, billingIssue, plusExpiring) always go out: they concern what the user pays for.
+const PREFERENCE={diary:'diary',like:'reactions',comment:'reactions',reply:'reactions',anniversary:'anniversaries',days:'anniversaries',years:'anniversaries',birthday:'anniversaries'};
 const MAX_DEVICES=5;
 const tokenId=token=>crypto.createHash('sha256').update(token).digest('hex').slice(0,40);
 const validToken=v=>typeof v==='string'&&/^[a-f0-9]{64,200}$/.test(v);
@@ -9,14 +11,14 @@ const validToken=v=>typeof v==='string'&&/^[a-f0-9]{64,200}$/.test(v);
 // Token bookkeeping runs inside the diary service transaction (rate limits and deletion checks apply).
 // pushDevices/{uid}: {devices:[{id,token,environment,locale,updatedAt}]} — server only.
 // pushTokens/{id}: {uid} — lets a device that signs into another account leave the previous one.
-async function registerDevice(tx,uid,{token,environment,locale},time){
+async function registerDevice(tx,uid,{token,environment,locale,timeZone},time){
  if(!validToken(token))return false;
  const id=tokenId(token),owner=await tx.get(`pushTokens/${id}`),mine=await tx.get(`pushDevices/${uid}`);
  let previous=null;if(owner&&owner.uid!==uid)previous=await tx.get(`pushDevices/${owner.uid}`);
  if(previous)tx.set(`pushDevices/${owner.uid}`,{devices:(previous.devices||[]).filter(d=>d.id!==id)});
  const devices=(mine?.devices||[]).filter(d=>d.id!==id);
  // Newest first (the sort is stable), so the cap drops the least recently registered devices.
- devices.unshift({id,token,environment:environment==='development'?'development':'production',locale:typeof locale==='string'?locale.slice(0,20):'en',updatedAt:time});
+ devices.unshift({id,token,environment:environment==='development'?'development':'production',locale:typeof locale==='string'?locale.slice(0,20):'en',...(validTimeZone(timeZone)?{timeZone}:{}),updatedAt:time});
  devices.sort((a,b)=>b.updatedAt-a.updatedAt);
  for(const old of devices.splice(MAX_DEVICES))tx.delete(`pushTokens/${old.id}`);
  tx.set(`pushDevices/${uid}`,{devices});tx.set(`pushTokens/${id}`,{uid});return true;
@@ -40,7 +42,7 @@ function createPush({read,removeDevices,send,log=console}){
     if(event.coupleId&&user?.coupleId!==event.coupleId)continue;
     const dead=[];
     await Promise.all(devices.devices.map(async device=>{
-     const {title,body}=render(event.kind,event,device.locale);
+     const {title,body}=render(event.kind,event,device.locale,device.timeZone);
      const result=await send(device,{title,body,thread:event.thread,collapse:event.collapse,data:{kind:event.kind,coupleId:event.coupleId||'',author:event.author||'',date:event.date||''}});
      if(result==='invalid')dead.push(device.id);
     }));

@@ -1,5 +1,5 @@
 const {initializeApp,getApps}=require('firebase-admin/app');
-const {getFirestore}=require('firebase-admin/firestore');
+const {getFirestore,FieldPath}=require('firebase-admin/firestore');
 const {getStorage}=require('firebase-admin/storage');
 const {onCall,onRequest,HttpsError}=require('firebase-functions/v2/https');
 const {setGlobalOptions}=require('firebase-functions/v2');
@@ -58,7 +58,9 @@ function enabled(){const c=appleConfig();return process.env.APPLE_BILLING_ENABLE
 async function tokenFor(uid){return db.runTransaction(async tx=>{const deleted=await tx.get(db.doc(`accountDeletions/${uid}`));if(deleted.exists)throw new DomainError('permission-denied','계정 삭제 요청을 처리 중입니다.',{accountDeletion:true});const ref=db.doc(`billingAccounts/${uid}`),s=await tx.get(ref);if(s.exists)return s.data().token;const token=randomUUID();tx.set(ref,{token});tx.set(db.doc(`billingTokens/${token}`),{uid});return token;});}
 async function applyTransaction(uid,row){
  const token=await tokenFor(uid),value=validateTransaction(row,token,appleConfig());
- return db.runTransaction(async tx=>{
+ let started=null;
+ const result=await db.runTransaction(async tx=>{
+  started=null;
   if((await tx.get(db.doc(`accountDeletions/${uid}`))).exists)return {transactionId:value.transactionId,deleted:true};
   const accountRef=db.doc(`billingAccounts/${uid}`),account=(await tx.get(accountRef)).data();const boundRef=db.doc(`appleSubscriptions/${value.originalTransactionId}`),bound=(await tx.get(boundRef)).data();
   if(bound&&bound.uid!==uid)throw new DomainError('permission-denied','다른 계정에 연결된 구독입니다.');
@@ -67,11 +69,17 @@ async function applyTransaction(uid,row){
   const ur=db.doc(`users/${uid}`),u=(await tx.get(ur)).data()||{};const cr=u.coupleId?db.doc(`couples/${u.coupleId}`):null,c=cr?(await tx.get(cr)).data():null;
   const partner=c?[c.user1,c.user2].find(v=>v&&v!==uid):null,p=partner?(await tx.get(db.doc(`users/${partner}`))).data():null;
   tx.set(boundRef,{...value,uid});tx.set(accountRef,{...account,chains:merged.chains});tx.set(ur,{...u,billingUntil:merged.premiumUntil});
-  if(c?.status==='active'&&[c.user1,c.user2].includes(uid))tx.update(cr,{premiumUntil:Math.max(merged.premiumUntil,p?.billingUntil||0)});
+  if(c?.status==='active'&&[c.user1,c.user2].includes(uid)){
+   const before=c.premiumUntil||0,after=Math.max(merged.premiumUntil,p?.billingUntil||0),time=Date.now();tx.update(cr,{premiumUntil:after});
+   // The partner hears about Plus only when this purchase is what turned it on for the space.
+   if(partner&&before<=time&&after>time)started={kind:'plusStarted',to:partner,coupleId:u.coupleId,name:c.settings?.[uid]?.displayName};
+  }
   return {transactionId:value.transactionId};
  });
+ if(started&&notify)await notify([started]).catch(()=>{});
+ return result;
 }
-exports.appleBilling=onCall({secrets:minimalTestflight?[]:[privateKey]},req=>callable(async()=>{
+exports.appleBilling=onCall({secrets:[...(minimalTestflight?[]:[privateKey]),...(apnsKey?[apnsKey]:[])]},req=>callable(async()=>{
  if(!req.auth)throw new HttpsError('unauthenticated','먼저 로그인해주세요.');const uid=req.auth.uid,action=req.data?.action;
  if((await db.doc(`accountDeletions/${uid}`).get()).exists)throw new HttpsError('permission-denied','계정 삭제 요청을 처리 중입니다.');
  if(action==='availability')return {available:enabled()};if(!enabled())throw new HttpsError('failed-precondition','Apple 결제 서버를 준비 중입니다.');
@@ -93,12 +101,18 @@ exports.appleBilling=onCall({secrets:minimalTestflight?[]:[privateKey]},req=>cal
  }
  throw new HttpsError('invalid-argument','지원하지 않는 작업입니다.');
 }));
-exports.appleNotifications=onRequest({maxInstances:1},async(req,res)=>{
+exports.appleNotifications=onRequest({maxInstances:1,secrets:apnsKey?[apnsKey]:[]},async(req,res)=>{
  if(req.method!=='POST'){res.sendStatus(405);return;}if(!enabled()){res.sendStatus(503);return;}
  try{if(typeof req.body?.signedPayload!=='string'||req.body.signedPayload.length>100000){res.sendStatus(400);return;}
   const notification=await decode('verifyAndDecodeNotification',req.body.signedPayload);const signed=notification.data?.signedTransactionInfo;if(!signed){res.sendStatus(200);return;}
   const row=await decode('verifyAndDecodeTransaction',signed);const owner=row.appAccountToken?(await db.doc(`billingTokens/${row.appAccountToken}`).get()).data():null;
-  if(owner)await applyTransaction(owner.uid,row);res.sendStatus(200);
+  if(owner){
+   await applyTransaction(owner.uid,row);
+   // Remember a turned-off auto-renewal so the hourly job can warn the purchaser before Plus ends.
+   if(notification.notificationType==='DID_CHANGE_RENEWAL_STATUS')await db.doc(`billingAccounts/${owner.uid}`).set({autoRenewOff:notification.subtype==='AUTO_RENEW_DISABLED'},{merge:true});
+   if(notification.notificationType==='DID_FAIL_TO_RENEW'&&notify)await notify([{kind:'billingIssue',to:owner.uid}]).catch(()=>{});
+  }
+  res.sendStatus(200);
  }catch(e){console.error('Apple notification rejected',e.code||e.name);res.sendStatus(e instanceof DomainError?400:500);}
 });
 
@@ -124,3 +138,37 @@ exports.cleanupPhotos=onSchedule({schedule:'every 1 hours',timeZone:'Asia/Seoul'
  const invites=await db.collection('invitations').where('expiresAt','<',Date.now()).limit(200).get();
  if(!invites.empty){const batch=db.batch();invites.docs.forEach(d=>batch.delete(d.ref));await batch.commit();}
 });
+
+// Hourly: date reminders (anniversaries, 100-day steps, yearly anniversaries, birthdays) in each member's time zone,
+// and a notice 3 days before Plus ends when auto-renewal is off. Deployed only with PUSH_ENABLED=true.
+const {dueReminders}=require('./reminders.cjs');
+const PLUS_NOTICE=3*86400000;
+async function claim(key,time){
+ // One delivery per key even if the job is retried.
+ try{await db.collection('pushLog').doc(key).create({expiresAt:time+7*86400000});return true;}
+ catch(e){if(e.code===6||e.code==='already-exists')return false;throw e;}
+}
+async function runReminders(time=Date.now()){
+ let cursor=null,sent=0;
+ for(;;){
+  let q=db.collection('couples').where('status','==','active').orderBy(FieldPath.documentId()).limit(300);
+  if(cursor)q=q.startAfter(cursor);const page=await q.get();
+  for(const row of page.docs)for(const event of dueReminders(row.id,row.data(),time)){
+   const {dedupe,...message}=event;if(await claim(dedupe,time)){await notify([message]);sent++;}
+  }
+  if(page.size<300)break;cursor=page.docs.at(-1);
+ }
+ const renewOff=await db.collection('billingAccounts').where('autoRenewOff','==',true).limit(500).get();
+ for(const row of renewOff.docs){
+  const until=(await db.doc(`users/${row.id}`).get()).data()?.billingUntil||0;
+  if(until<=time){await row.ref.set({autoRenewOff:false},{merge:true});continue;}
+  if(until-time<=PLUS_NOTICE&&await claim(`plusExpiring_${row.id}_${until}`,time)){await notify([{kind:'plusExpiring',to:row.id,at:until}]);sent++;}
+ }
+ const old=await db.collection('pushLog').where('expiresAt','<',time).limit(400).get();
+ if(!old.empty){const batch=db.batch();old.docs.forEach(d=>batch.delete(d.ref));await batch.commit();}
+ return sent;
+}
+if(pushEnabled){
+ const {onSchedule:schedule}=require('firebase-functions/v2/scheduler');
+ exports.pushReminders=schedule({schedule:'0 * * * *',timeZone:'UTC',maxInstances:1,timeoutSeconds:300,secrets:[apnsKey]},async()=>{console.info('Reminder pushes sent',await runReminders());});
+}

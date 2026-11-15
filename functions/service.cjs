@@ -1,6 +1,10 @@
 const {randomUUID,randomBytes}=require('node:crypto');
 const {reserveOperation}=require('./rate-limits.cjs');
 const {registerDevice,unregisterDevice}=require('./push.cjs');
+const {validTimeZone}=require('./reminders.cjs');
+// Members' birthdays (month-day only; the year stays on the private user document) and time zones are mirrored
+// on the couple so the hourly reminder job reads one document per couple.
+const mirror=(c,uid,user)=>({birthdays:{...(c.birthdays||{}),...(user.birthDate?{[uid]:user.birthDate.slice(5)}:{})},timeZones:{...(c.timeZones||{}),...(user.timeZone?{[uid]:user.timeZone}:{})}});
 class DomainError extends Error {constructor(code,message,details){super(message);this.code=code;this.details=details;}}
 function fail(code,message){throw new DomainError(code,message);}
 function check(ok,message='요청 내용을 확인해주세요.'){if(!ok)fail('invalid-argument',message);}
@@ -27,22 +31,30 @@ function createService(store,{now=Date.now,notify}={}){
     if(user.coupleId){const old=await tx.get(`couples/${id(user.coupleId)}`);if(old?.status==='migrating')fail('failed-precondition','기록 이전을 확인 중입니다. 잠시 후 다시 시도해주세요.');if(!old||old.schemaVersion!==2)fail('failed-precondition','기존 기록 이전이 필요합니다. 원본을 보존한 상태로 관리자에게 문의해주세요.');}
     if(!storedUser)tx.set(userPath,user);return {coupleId:user.coupleId||null};
    }
-   if(action==='pushRegister'){check(await registerDevice(tx,uid,data,time));return {};}
+   if(action==='pushRegister'){
+    check(await registerDevice(tx,uid,data,time));
+    if(validTimeZone(data.timeZone)&&user.timeZone!==data.timeZone){
+     const next={...user,timeZone:data.timeZone};tx.set(userPath,next);
+     const c=user.coupleId?await tx.get(`couples/${id(user.coupleId)}`):null;
+     if(c?.status==='active'&&[c.user1,c.user2].includes(uid))tx.set(`couples/${user.coupleId}`,{...c,...mirror(c,uid,next)});
+    }
+    return {};
+   }
    if(action==='pushUnregister'){check(await unregisterDevice(tx,uid,data.token));return {};}
    if(action==='pushPrefs'){
-    const p=data.notify;check(p&&typeof p.diary==='boolean'&&typeof p.reactions==='boolean');
-    tx.set(userPath,{...user,notify:{diary:p.diary,reactions:p.reactions}});return {};
+    const p=data.notify;check(p&&typeof p.diary==='boolean'&&typeof p.reactions==='boolean'&&['boolean','undefined'].includes(typeof p.anniversaries));
+    tx.set(userPath,{...user,notify:{...(user.notify||{}),diary:p.diary,reactions:p.reactions,...(typeof p.anniversaries==='boolean'?{anniversaries:p.anniversaries}:{})}});return {};
    }
    if(action==='createSpace'){
     if(user.coupleId)fail('failed-precondition','이미 일기장이 있습니다.');check(date(data.startDate));const cid=randomUUID();
-    tx.set(`couples/${cid}`,{schemaVersion:2,status:'active',user1:uid,user2:null,startDate:data.startDate,settings:{},anniversaries:[],premiumUntil:user.billingUntil||0,createdAt:time});tx.set(userPath,{...user,coupleId:cid});return {coupleId:cid};
+    tx.set(`couples/${cid}`,{schemaVersion:2,status:'active',user1:uid,user2:null,startDate:data.startDate,settings:{},anniversaries:[],premiumUntil:user.billingUntil||0,createdAt:time,...mirror({},uid,user)});tx.set(userPath,{...user,coupleId:cid});return {coupleId:cid};
    }
    if(action==='join'){
     if(user.coupleId)fail('failed-precondition','현재 일기장을 먼저 보관해주세요.');check(typeof data.code==='string'&&/^[A-F0-9]{16}$/.test(data.code));
     const path=`invitations/${data.code}`,invite=await tx.get(path);if(!invite||invite.expiresAt<=time)fail('not-found','만료되었거나 사용된 초대 코드입니다.');
     const cp=`couples/${invite.coupleId}`,c=await tx.get(cp);if(!c||c.status!=='active'||c.user2||c.user1===uid)fail('failed-precondition','연결할 수 없는 일기장입니다.');
     const owner=await tx.get(`users/${c.user1}`);if(owner?.coupleId!==invite.coupleId)fail('failed-precondition','유효하지 않은 초대입니다.');
-    tx.set(cp,{...c,user2:uid,premiumUntil:Math.max(owner.billingUntil||0,user.billingUntil||0),inviteCode:null,inviteExpiresAt:0});tx.set(userPath,{...user,coupleId:invite.coupleId});tx.delete(path);
+    tx.set(cp,{...c,user2:uid,premiumUntil:Math.max(owner.billingUntil||0,user.billingUntil||0),inviteCode:null,inviteExpiresAt:0,...mirror(c,uid,user)});tx.set(userPath,{...user,coupleId:invite.coupleId});tx.delete(path);
     events.push({kind:'connected',to:c.user1,coupleId:invite.coupleId});return {coupleId:invite.coupleId};
    }
    if(action==='readPhoto'){
@@ -79,7 +91,16 @@ function createService(store,{now=Date.now,notify}={}){
    }
    if(action==='settings'){
     check(date(data.startDate));const s=data.settings||{};const settings={displayName:text(s.displayName,40),appTitle:text(s.appTitle,60),icon:text(s.icon,40),theme:text(s.theme,30)};
-    tx.set(cp,{...c,startDate:data.startDate,settings:{...c.settings,[uid]:settings}});return {};
+    // birthDate is optional (older app versions do not send it); '' clears it.
+    let next=c;
+    if(data.birthDate!==undefined){
+     const latest=new Date(time+14*3600000).toISOString().slice(0,10);
+     check(data.birthDate===''||(date(data.birthDate)&&data.birthDate<=latest),'생년월일을 확인해주세요.');
+     const birthDate=data.birthDate||null,birthdays={...(c.birthdays||{})};
+     if(birthDate)birthdays[uid]=birthDate.slice(5);else delete birthdays[uid];
+     tx.set(userPath,{...user,birthDate});next={...c,birthdays};
+    }
+    tx.set(cp,{...next,startDate:data.startDate,settings:{...c.settings,[uid]:settings}});return {};
    }
    if(action==='anniversaryAdd'||action==='anniversaryDelete'){
     const key=id(data.id),rows=c.anniversaries||[];let next=rows.filter(a=>a.id!==key);

@@ -30,7 +30,7 @@ function uiIcon(name) {
         let selectedAnniversaryIcon = '🎉'; // 기념일 아이콘
         let currentTheme = 'rose';
         let appTitle = '우리의 공간';
-        let myDisplayName='나', partnerDisplayName='파트너';
+        let myDisplayName='나', partnerDisplayName='파트너', myBirthDate='';
         // Default names are placeholders and follow the language; nicknames the user typed are shown exactly as written.
         const shownName=name=>name==='나'||name==='파트너'?t(name):name;
         let editingRevision=0, editorDate=localDate(), suppressDraft=false, session=null;
@@ -131,6 +131,10 @@ function uiIcon(name) {
                 displayNameInput.value = myDisplayName;
             }
             
+            // 내 생일 (비공개 사용자 문서에서 불러옴)
+            const birthDateInput = document.getElementById('birthDateInput');
+            if (birthDateInput) { birthDateInput.value = myBirthDate; birthDateInput.max = localDate(); }
+
             // 사귄 날짜 표시 및 함께한 날 계산
             const startDateInput = document.getElementById('startDateInput');
             if (startDateInput && startDate) {
@@ -972,6 +976,7 @@ window.diaryUI={
     },
     clearDraft(date){try{localStorage.removeItem(draftKey(session.uid,session.coupleId,date));}catch{}suppressDraft=true;resetForm();suppressDraft=false;},
     persistDraft, resetForm, openEditor,
+    setBirthDate(value){myBirthDate=typeof value==='string'?value:'';},
     state(){return {entries,partnerEntries,anniversaries,startDate,myIcon,currentTheme,appTitle,myDisplayName,selectedAnniversaryIcon};},
     render(data){
         entries=data.entries;partnerEntries=data.partnerEntries;anniversaries=data.anniversaries||[];startDate=data.startDate||localDate();

@@ -18,11 +18,11 @@ test('a tapped notification opens only entries of the current space',()=>{
 });
 test('launch never shows the system prompt; the first saved diary offers it once',async()=>{
  calls.length=0;const p=plugin(),confirms=[];let accepted;
- const c=createPushClient({plugin:p,locale:()=>'ja',status:()=>{},confirm:fn=>{confirms.push(fn);accepted=fn;},open:()=>{}});
+ const c=createPushClient({plugin:p,locale:()=>'ja',timeZone:()=>'Asia/Tokyo',status:()=>{},confirm:fn=>{confirms.push(fn);accepted=fn;},open:()=>{}});
  await c.context(session);assert.equal(p.asked,0);assert.equal(calls.length,0);
  assert.equal(await c.context({...session}),false);
  await c.offer();await c.offer();assert.equal(confirms.length,1);
- await accepted();assert.equal(p.asked,1);assert.deepEqual(calls[0],['pushRegister',{token:'f'.repeat(64),environment:'production',locale:'ja'}]);
+ await accepted();assert.equal(p.asked,1);assert.deepEqual(calls[0],['pushRegister',{token:'f'.repeat(64),environment:'production',locale:'ja',timeZone:'Asia/Tokyo'}]);
  await c.signOut();assert.deepEqual(calls.at(-1),['pushUnregister',{token:'f'.repeat(64)}]);
 });
 test('granted devices refresh silently and denied ones are sent to Settings',async()=>{
@@ -34,5 +34,5 @@ test('taps wait until the diary is loaded',async()=>{
  const opened=[],c=createPushClient({plugin:plugin('denied'),locale:()=>'ko',status(){},confirm(){},open:t=>opened.push(t)});
  c.opened({kind:'like',coupleId:'space',date:'2026-11-14'});await c.context(session);assert.equal(opened.length,0);
  c.ready();assert.deepEqual(opened,[{date:'2026-11-14'}]);
- assert.deepEqual(await c.preferences(),{diary:false,reactions:true});
+ assert.deepEqual(await c.preferences(),{diary:false,reactions:true,anniversaries:true});
 });

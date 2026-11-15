@@ -202,6 +202,18 @@
           />
         </div>
 
+        <!-- 내 생일 -->
+        <div class="settings-section">
+          <div class="settings-section-title"><span>🎂</span> 내 생일</div>
+          <div class="icon-label">생일 전날 저녁과 당일 아침에 상대방에게 알림이 가요. 태어난 해는 상대방에게 보이지 않아요.</div>
+          <input
+            type="date"
+            class="title-input"
+            id="birthDateInput"
+            aria-label="내 생일"
+          />
+        </div>
+
         <!-- 사귄 날짜 설정 -->
         <div class="settings-section">
           <div class="settings-section-title">
@@ -522,6 +534,7 @@
             </div>
             <label class="notify-row"><span>상대방의 새 일기</span><input type="checkbox" id="notifyDiary" role="switch" checked /></label>
             <label class="notify-row"><span>내 일기에 달린 하트·댓글</span><input type="checkbox" id="notifyReactions" role="switch" checked /></label>
+            <label class="notify-row"><span>기념일·생일</span><input type="checkbox" id="notifyAnniversaries" role="switch" checked /></label>
           </div>
           <div class="language-setting"><label for="languageSelect">언어</label><select id="languageSelect" data-language-picker aria-label="언어"></select><p>이 기기에만 적용됩니다. 일기와 댓글은 번역되지 않습니다.</p></div>
           <button id="logoutBtn" class="logout-btn">

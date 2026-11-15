@@ -14,7 +14,9 @@ export function targetFor(data, session) {
   return { date: data.date };
 }
 
-export function createPushClient({ plugin, locale, status, confirm, open, signedOutTimeout = 4000 }) {
+const deviceTimeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return undefined; } };
+
+export function createPushClient({ plugin, locale, status, confirm, open, timeZone = deviceTimeZone, signedOutTimeout = 4000 }) {
   let session = null, token = null, permission = 'prompt', registering = null, offered = false;
   const pendingOpens = [];
   let ready = false;
@@ -27,7 +29,7 @@ export function createPushClient({ plugin, locale, status, confirm, open, signed
       const result = await plugin.register();
       permission = result.status;
       if (result.token && session) {
-        await call('pushRegister', { token: result.token, environment: result.environment, locale: locale() });
+        await call('pushRegister', { token: result.token, environment: result.environment, locale: locale(), timeZone: timeZone() });
         token = result.token;
       }
       return permission;
@@ -81,7 +83,7 @@ export function createPushClient({ plugin, locale, status, confirm, open, signed
       const current = token; token = null;
       await Promise.race([call('pushUnregister', { token: current }).catch(() => {}), new Promise(r => setTimeout(r, signedOutTimeout))]);
     },
-    async preferences() { return { diary: true, reactions: true, ...((await getUser()).notify || {}) }; },
+    async preferences() { return { diary: true, reactions: true, anniversaries: true, ...((await getUser()).notify || {}) }; },
     savePreferences: notify => call('pushPrefs', { notify })
   };
 }
@@ -92,7 +94,7 @@ async function mountNative() {
   const ui = () => window.diaryUI;
   const box = document.getElementById('notifySetting'), permissionBox = document.getElementById('notifyPermission');
   const permissionText = document.getElementById('notifyPermissionText'), permissionButton = document.getElementById('notifyPermissionBtn');
-  const toggles = { diary: document.getElementById('notifyDiary'), reactions: document.getElementById('notifyReactions') };
+  const toggles = { diary: document.getElementById('notifyDiary'), reactions: document.getElementById('notifyReactions'), anniversaries: document.getElementById('notifyAnniversaries') };
 
   const reportStatus = result => {
     if (result === 'granted') ui()?.status('알림을 켰습니다.', 'success');
@@ -140,7 +142,7 @@ async function mountNative() {
     try { reportStatus(await client.enable()); } catch { reportStatus('error'); }
   });
   for (const input of Object.values(toggles)) input?.addEventListener('change', async () => {
-    const notify = { diary: toggles.diary.checked, reactions: toggles.reactions.checked };
+    const notify = Object.fromEntries(Object.entries(toggles).map(([key, el]) => [key, el.checked]));
     try { await client.savePreferences(notify); ui()?.status('알림 설정을 저장했습니다.', 'success'); }
     catch { input.checked = !input.checked; ui()?.status('알림 설정을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error'); }
   });
