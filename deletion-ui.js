@@ -11,6 +11,9 @@ export function mountDeletionUI({document,storage,auth,pageURL,subscribe,reauthe
     $('receiptTitle').textContent=row.status==='complete'?'계정 삭제가 완료되었습니다':'계정 삭제 요청 처리 중';
     $('receiptMessage').textContent=row.status==='complete'?'앱 계정과 기록·사진 삭제를 완료했습니다. Apple 구독은 별도로 관리해주세요.':row.dueAt?tr('기록 접근과 공유가 중단되었습니다. {date}까지 COMINO가 삭제하고 가입 이메일로 완료를 안내합니다.',{date:formatDate(row.dueAt,lang())}):tr('기록 접근과 공유가 중단되었습니다. COMINO가 삭제하고 가입 이메일로 완료를 안내합니다.');
     $('receiptCode').textContent=receipt?tr('접수번호: {id}',{id:receipt}):'';
+    // Clearer guidance for already-requested users
+    const hint=$('alreadyRequestedHint');
+    if(hint)hint.hidden=row.status==='complete';
   }
   async function refresh(){
     const token=receipt,view=version;
