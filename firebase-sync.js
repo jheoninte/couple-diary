@@ -44,7 +44,7 @@ function subscribeEntries() {
         document.getElementById('recordScope').textContent=t(session.archive?'보관함 · 최근 {n}개 기록을 불러왔습니다. 검색·달력·사진은 불러온 기록을 기준으로 표시합니다.':'최근 {n}개 기록을 불러왔습니다. 검색·달력·사진은 불러온 기록을 기준으로 표시합니다.',{n:snap.size});
         const older=document.getElementById('loadOlderBtn');
         older.hidden=snap.size<pageSize;
-        if(snap.size>=300)older.textContent='더 이전 기록 불러오기 ('+snap.size+')';
+        if(snap.size>=300)older.textContent=t('더 이전 기록 불러오기 ({n})',{n:snap.size});
         render().catch(fail);
     },e=>{fail(e);document.getElementById('loadingMessage').textContent='기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';},pageSize);
 }
