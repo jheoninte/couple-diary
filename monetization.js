@@ -86,7 +86,9 @@ function renderRenewal() {
 }
 function render() {
   const active = activeMembership(state);
-  entry.textContent = active ? "PLUS 이용 중" : "PLUS";
+  const cached = window.diaryBilling?.cachedUntil?.() || 0;
+  const showCached = !active && cached > Date.now();
+  entry.textContent = active ? "PLUS 이용 중" : showCached ? "PLUS" : "PLUS";
   entry.classList.toggle("subscribed", active);
   const stateEl = document.getElementById("membershipState");
   const billing = window.diaryBilling;
@@ -120,9 +122,11 @@ function render() {
   document.getElementById('restorePurchases').disabled = !billing?.available || billing.busy;
   stateEl.textContent = active
     ? t('두 사람 모두 Plus 이용 중 · {date}까지', { date: fmt.date(state.premiumUntil) })
-    : state
-      ? native ? billing?.available ? 'App Store에서 결제 금액을 확인하고 구독할 수 있어요.' : 'App Store 상품과 서버 연결을 준비 중이에요. 결제는 비활성 상태입니다.' : "Plus 구독은 iOS 앱에서 이용할 수 있습니다."
-      : "구독 상태를 확인하지 못했어요. 연결 후 다시 확인해주세요.";
+    : showCached
+      ? t('구독 상태를 확인하고 있어요. 이전 기록은 {date}까지 유효했습니다.', { date: fmt.date(cached) })
+      : state
+        ? native ? billing?.available ? 'App Store에서 결제 금액을 확인하고 구독할 수 있어요.' : 'App Store 상품과 서버 연결을 준비 중이에요. 결제는 비활성 상태입니다.' : "Plus 구독은 iOS 앱에서 이용할 수 있습니다."
+        : "구독 상태를 확인하지 못했어요. 연결 후 다시 확인해주세요.";
   const hint = document.getElementById("photoPlanHint");
   if (hint)
     hint.textContent = active
@@ -137,6 +141,7 @@ function render() {
         ads.reset();
         render();
         refresh();
+        window.diaryUI?.status?.('구독 기간이 끝났습니다. 새 사진 첨부는 Plus가 필요해요.', 'info');
       },
       Math.min(2147483647, Math.max(1000, state.premiumUntil - Date.now())),
     );
@@ -157,6 +162,7 @@ async function refresh(force = false) {
       const next = await call("membership", { coupleId: context.coupleId });
       if (current !== generation) return;
       state = next;
+      if (next?.premiumUntil) window.diaryBilling?.cacheStatus?.(next.premiumUntil);
       render();
     } catch {
       if (current === generation) {

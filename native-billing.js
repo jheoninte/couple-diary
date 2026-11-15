@@ -3,17 +3,43 @@ import { syncTransactions } from './billing-sync.js';
 import { functions } from './firebase-config.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-functions.js';
 import { NATIVE_CONFIG } from './native-config.js';
+
 if (window.diaryNativeReady) {
   const remote = async (action, data = {}) => (await httpsCallable(functions, 'appleBilling', { timeout: 60000 })({ action, ...data })).data;
   let context, revision = 0, initialized;
   const changed = () => window.dispatchEvent(new Event('diary:billing-updated'));
-  async function verify(signedTransaction, version) {
-    if (!context || version !== revision) throw Error('로그인 계정이 변경되었습니다. 원래 계정으로 복원해주세요.');
-    const result = await remote('verify', { signedTransaction });
-    if (result.superseded) throw Error('구독 확인이 진행 중입니다. 잠시 후 복원해주세요.');
-    await window.diaryStore.finish({ transactionId: result.transactionId });
-    if (version === revision) await window.diaryMonetization?.refresh(true);
+  const failedQueue = new Map(); // signedTransaction -> retry count
+
+  function cacheStatus(premiumUntil) {
+    try { localStorage.setItem('diary.plus.until', String(premiumUntil || 0)); } catch {}
   }
+  function cachedUntil() {
+    try { return Number(localStorage.getItem('diary.plus.until')) || 0; } catch { return 0; }
+  }
+
+  async function verify(signedTransaction, version, isRetry = false) {
+    if (!context || version !== revision) throw Error('로그인 계정이 변경되었습니다. 원래 계정으로 복원해주세요.');
+    try {
+      const result = await remote('verify', { signedTransaction });
+      if (result.superseded) throw Error('구독 확인이 진행 중입니다. 잠시 후 복원해주세요.');
+      await window.diaryStore.finish({ transactionId: result.transactionId });
+      failedQueue.delete(signedTransaction);
+      if (version === revision) {
+        await window.diaryMonetization?.refresh(true);
+        cacheStatus(window.diaryMonetization?.state()?.premiumUntil);
+      }
+      console.info('[billing] verified', result.transactionId);
+    } catch (e) {
+      const count = (failedQueue.get(signedTransaction) || 0) + 1;
+      failedQueue.set(signedTransaction, count);
+      console.warn('[billing] verify failed', isRetry ? '(retry)' : '', count, e?.message || e);
+      if (count < 3 && version === revision) {
+        setTimeout(() => verify(signedTransaction, version, true).catch(() => {}), 1500 * count);
+      }
+      throw e;
+    }
+  }
+
   async function sync(rows, version) {
     return syncTransactions(rows, signed => verify(signed, version), async () => {
       if (version !== revision) return;
@@ -21,6 +47,7 @@ if (window.diaryNativeReady) {
       if (version === revision) await window.diaryMonetization?.refresh(true);
     });
   }
+
   window.diaryBilling = {
     available: false, products: {}, busy: false,
     async buy(plan) {
@@ -44,7 +71,9 @@ if (window.diaryNativeReady) {
       } finally { this.busy = false; changed(); }
     },
     manage: () => window.diaryStore.manage(),
+    cachedUntil,
   };
+
   async function initialize(next) {
     context = next; const version = ++revision;
     window.diaryBilling.available = false; changed();
@@ -58,6 +87,7 @@ if (window.diaryNativeReady) {
       await initialized;
       step = 'server';
       const { available } = await remote('availability');
+      console.info('[billing] server availability', available);
       if (!available || version !== revision) { if (!available) console.warn('[billing] server reports billing unavailable'); return; }
       step = 'products';
       const products = await window.diaryStore.load();
@@ -67,8 +97,13 @@ if (window.diaryNativeReady) {
       window.diaryBilling.products = Object.fromEntries(Object.entries(NATIVE_CONFIG.products).map(([plan, id]) => [plan, products.find(product => product.id === id)]));
       window.diaryBilling.available = true; changed();
       await sync((await window.diaryStore.pending()).transactions, version);
-    } catch (e) { console.warn('[billing] setup failed at', step, e?.code || '', e?.message || e); /* Never manufacture a successful purchase. */ }
+      // Retry any previously failed verifications
+      for (const [signed] of failedQueue) {
+        verify(signed, version, true).catch(() => {});
+      }
+    } catch (e) { console.warn('[billing] setup failed at', step, e?.code || '', e?.message || e); }
   }
+
   window.addEventListener('diary:context', event => {
     const next = event.detail;
     if (next?.uid !== context?.uid || next?.coupleId !== context?.coupleId || next?.archive !== context?.archive) initialize(next);
