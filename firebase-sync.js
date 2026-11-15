@@ -3,6 +3,7 @@ import {onAuthStateChanged, signOut} from 'https://www.gstatic.com/firebasejs/12
 import * as api from './diary-api.js';
 import {validDate, localDate, LIMITS} from './web-core.js';
 import {t} from './i18n.js';
+import './push-client.js';
 const ui=window.diaryUI;
 document.getElementById('gateLoginLink').href=pageURL('login.html');
 let session=null,couple=null,records=new Map(),stops=[],entryStop=null,pageSize=100,generation=0,ready=false,entriesLoaded=false,editorInitialized=false;
@@ -37,7 +38,7 @@ async function render() {
     // Restore scroll after render for large feeds
     if(scrollY>0)requestAnimationFrame(()=>window.scrollTo(0,scrollY));
     if(!editorInitialized){ui.openEditor(localDate(),false);editorInitialized=true;}
-    if(!ready){ready=true;document.getElementById('authGate').hidden=true;if(location.hash==='#settings'){history.replaceState(null,'',location.pathname+location.search);window.openSettings?.();}ui.status(session.archive?'보관함 · 내 일기만 읽을 수 있습니다.':'최신 기록을 불러왔습니다.','success');}
+    if(!ready){ready=true;document.getElementById('authGate').hidden=true;window.dispatchEvent(new Event('diary:ready'));if(location.hash==='#settings'){history.replaceState(null,'',location.pathname+location.search);window.openSettings?.();}ui.status(session.archive?'보관함 · 내 일기만 읽을 수 있습니다.':'최신 기록을 불러왔습니다.','success');}
 }
 function subscribeEntries() {
     entryStop?.();ready=false;
@@ -129,7 +130,7 @@ window.diaryActions={
     toggleLike(date,type='partner'){const e=target(date,type);return action(`like-${e.author}-${date}`,null,()=>api.call('like',{coupleId:session.coupleId,author:e.author,date,liked:!(e.likedBy||[]).includes(session.uid)}));}
 };
 document.getElementById('loadOlderBtn').onclick=()=>{const y=window.scrollY;pageSize+=100;subscribeEntries();setTimeout(()=>window.scrollTo(0,y),50);};
-document.getElementById('logoutBtn').onclick=async()=>{ui.persistDraft();try{await signOut(auth);}catch(e){fail(e);}};
+document.getElementById('logoutBtn').onclick=async()=>{ui.persistDraft();try{await window.diaryPush?.signOut();await signOut(auth);}catch(e){fail(e);}};
 window.addEventListener('offline',()=>ui.status('오프라인입니다. 작성 중인 초안은 이 기기에 보관됩니다.','info'));
 window.addEventListener('online',()=>ui.status('인터넷에 다시 연결되었습니다. 저장 버튼으로 초안을 저장해주세요.','info'));
 

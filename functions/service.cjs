@@ -1,5 +1,6 @@
 const {randomUUID,randomBytes}=require('node:crypto');
 const {reserveOperation}=require('./rate-limits.cjs');
+const {registerDevice,unregisterDevice}=require('./push.cjs');
 class DomainError extends Error {constructor(code,message,details){super(message);this.code=code;this.details=details;}}
 function fail(code,message){throw new DomainError(code,message);}
 function check(ok,message='요청 내용을 확인해주세요.'){if(!ok)fail('invalid-argument',message);}
@@ -11,17 +12,26 @@ function quota(q,time){const day=new Date(time+9*3600000).toISOString().slice(0,
  // Older documents counted every attempt (including failed ones) as usage; carry those over only as attempts.
  const legacy=q.attempts===undefined;
  return {day,month,daily:!legacy&&q.day===day?q.daily||0:0,monthly:!legacy&&q.month===month?q.monthly||0:0,attempts:q.day===day?(legacy?q.daily:q.attempts)||0:0};}
-function createService(store,{now=Date.now}={}){
+// notify(events) runs after the transaction commits; events from a retried attempt are discarded.
+function createService(store,{now=Date.now,notify}={}){
  async function execute(uid,data={}){
   if(!uid)fail('unauthenticated','먼저 로그인해주세요.');id(uid);check(data&&typeof data==='object');
   const action=data.action,time=now();
-  return store.transaction(async tx=>{
+  let events=[];
+  const result=await store.transaction(async tx=>{
+   events=[];
    if(await tx.get(`accountDeletions/${uid}`))throw new DomainError('permission-denied','계정 삭제 요청을 처리 중입니다.',{accountDeletion:true});
    if(!await reserveOperation(tx,uid,action,time))fail('resource-exhausted','요청이 많습니다. 잠시 후 다시 시도해주세요.');
    const userPath=`users/${uid}`,storedUser=await tx.get(userPath),user=storedUser||{coupleId:null};
    if(action==='initialize'){
     if(user.coupleId){const old=await tx.get(`couples/${id(user.coupleId)}`);if(old?.status==='migrating')fail('failed-precondition','기록 이전을 확인 중입니다. 잠시 후 다시 시도해주세요.');if(!old||old.schemaVersion!==2)fail('failed-precondition','기존 기록 이전이 필요합니다. 원본을 보존한 상태로 관리자에게 문의해주세요.');}
     if(!storedUser)tx.set(userPath,user);return {coupleId:user.coupleId||null};
+   }
+   if(action==='pushRegister'){check(await registerDevice(tx,uid,data,time));return {};}
+   if(action==='pushUnregister'){check(await unregisterDevice(tx,uid,data.token));return {};}
+   if(action==='pushPrefs'){
+    const p=data.notify;check(p&&typeof p.diary==='boolean'&&typeof p.reactions==='boolean');
+    tx.set(userPath,{...user,notify:{diary:p.diary,reactions:p.reactions}});return {};
    }
    if(action==='createSpace'){
     if(user.coupleId)fail('failed-precondition','이미 일기장이 있습니다.');check(date(data.startDate));const cid=randomUUID();
@@ -32,7 +42,8 @@ function createService(store,{now=Date.now}={}){
     const path=`invitations/${data.code}`,invite=await tx.get(path);if(!invite||invite.expiresAt<=time)fail('not-found','만료되었거나 사용된 초대 코드입니다.');
     const cp=`couples/${invite.coupleId}`,c=await tx.get(cp);if(!c||c.status!=='active'||c.user2||c.user1===uid)fail('failed-precondition','연결할 수 없는 일기장입니다.');
     const owner=await tx.get(`users/${c.user1}`);if(owner?.coupleId!==invite.coupleId)fail('failed-precondition','유효하지 않은 초대입니다.');
-    tx.set(cp,{...c,user2:uid,premiumUntil:Math.max(owner.billingUntil||0,user.billingUntil||0),inviteCode:null,inviteExpiresAt:0});tx.set(userPath,{...user,coupleId:invite.coupleId});tx.delete(path);return {coupleId:invite.coupleId};
+    tx.set(cp,{...c,user2:uid,premiumUntil:Math.max(owner.billingUntil||0,user.billingUntil||0),inviteCode:null,inviteExpiresAt:0});tx.set(userPath,{...user,coupleId:invite.coupleId});tx.delete(path);
+    events.push({kind:'connected',to:c.user1,coupleId:invite.coupleId});return {coupleId:invite.coupleId};
    }
    if(action==='readPhoto'){
     check(typeof data.path==='string'&&data.path.length>0&&data.path.length<=300&&!data.path.includes('..'));
@@ -107,22 +118,40 @@ function createService(store,{now=Date.now}={}){
       const filename=p.split('/').at(-1);tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt:time,createdAt:time,attached:false});
      }
     }
-    const entry={...(old||{}),author:uid,date:data.date,content,mood,photos:data.photos,revision:data.revision+1,comments:old?.comments||[],likedBy:old?.likedBy||[],createdAt:old?.createdAt||time,updatedAt:time,deletedAt:null};tx.set(ep,entry);return {entry};
+    const entry={...(old||{}),author:uid,date:data.date,content,mood,photos:data.photos,revision:data.revision+1,comments:old?.comments||[],likedBy:old?.likedBy||[],createdAt:old?.createdAt||time,updatedAt:time,deletedAt:null};
+    // Announce a diary to the partner once; later edits, deletes and restores stay quiet.
+    const partner=[c.user1,c.user2].find(u=>u&&u!==uid);
+    if(partner&&!old?.announcedAt){entry.announcedAt=time;events.push({kind:'diary',to:partner,coupleId:cid,author:uid,date:data.date,name:c.settings?.[uid]?.displayName,thread:`diary-${cid}`});}
+    tx.set(ep,entry);return {entry};
    }
    if(!old)fail('not-found','일기를 찾을 수 없습니다.');
    if(action==='deleteEntry'||action==='restoreEntry'){
     if(old.revision!==data.revision)fail('aborted','최신 일기를 다시 불러와주세요.');tx.set(ep,{...old,deletedAt:action==='deleteEntry'?time:null,revision:old.revision+1,updatedAt:time});return {};
    }
    if(old.deletedAt)fail('failed-precondition','삭제된 일기는 변경할 수 없습니다.');
-   if(action==='like'){check(typeof data.liked==='boolean');const likedBy=(old.likedBy||[]).filter(u=>u!==uid);if(data.liked)likedBy.push(uid);tx.set(ep,{...old,likedBy});return {};}
+   const reaction=extra=>({coupleId:cid,author,date:data.date,name:c.settings?.[uid]?.displayName,thread:`entry-${cid}-${author}_${data.date}`,...extra});
+   if(action==='like'){
+    check(typeof data.liked==='boolean');const likedBy=(old.likedBy||[]).filter(u=>u!==uid);if(data.liked)likedBy.push(uid);
+    // One heart notification per person per entry, so toggling the heart does not repeat it.
+    const notified=old.likeNotified||[],announce=data.liked&&author!==uid&&!notified.includes(uid);
+    if(announce)events.push(reaction({kind:'like',to:author,collapse:`like-${author}_${data.date}`}));
+    tx.set(ep,{...old,likedBy,...(announce?{likeNotified:[...notified,uid]}:{})});return {};
+   }
    const comments=old.comments||[],key=id(data.id),comment=comments.find(c=>c.id===key);
    if(action==='commentAdd'){
-    if(comment)return {};check(comments.length<200);tx.set(ep,{...old,comments:[...comments,{id:key,author:uid,text:text(data.text,1000),createdAt:time}]});return {};
+    if(comment)return {};check(comments.length<200);const body=text(data.text,1000);tx.set(ep,{...old,comments:[...comments,{id:key,author:uid,text:body,createdAt:time}]});
+    // A comment on the partner's entry goes to its author; the author's own comment is a reply to the partner who commented.
+    const partner=[c.user1,c.user2].find(u=>u&&u!==uid);
+    if(author!==uid)events.push(reaction({kind:'comment',to:author,text:body}));
+    else if(partner&&comments.some(x=>x.author===partner))events.push(reaction({kind:'reply',to:partner,text:body}));
+    return {};
    }
    if(!['commentEdit','commentDelete'].includes(action))fail('invalid-argument','지원하지 않는 작업입니다.');
    if(!comment)fail('not-found','댓글을 찾을 수 없습니다.');if(comment.author!==uid)fail('permission-denied','본인의 댓글만 변경할 수 있습니다.');
    tx.set(ep,{...old,comments:action==='commentDelete'?comments.filter(c=>c.id!==key):comments.map(c=>c.id===key?{...c,text:text(data.text,1000),updatedAt:time}:c)});return {};
   });
+  if(events.length&&notify)await notify(events).catch(()=>{});
+  return result;
  }
  return {execute};
 }

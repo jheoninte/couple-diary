@@ -70,6 +70,9 @@ async function advanceDeletion({db,bucket,auth},uid,{now=Date.now,batchSize=100}
    if(!rows.empty){await removeDocs(rows.docs);await patch({});return {status:'pending'};}
    const account=(await db.doc(`billingAccounts/${uid}`).get()).data(),batch=db.batch();
    if(account?.token)batch.delete(db.doc(`billingTokens/${account.token}`));
+   const push=(await db.doc(`pushDevices/${uid}`).get()).data();
+   for(const device of push?.devices||[])batch.delete(db.doc(`pushTokens/${device.id}`));
+   batch.delete(db.doc(`pushDevices/${uid}`));
    for(const p of [`billingAccounts/${uid}`,`uploadQuotas/${uid}`,`operationLimits/${uid}`,`users/${uid}`])batch.delete(db.doc(p));
    await batch.commit();await patch({phase:'authentication'});
   }else if(job.phase==='authentication'){

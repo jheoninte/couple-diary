@@ -17,7 +17,7 @@ set('CFBundleDevelopmentRegion','string','ko');
 {const sd=root+'/SceneDelegate.swift';if(fs.existsSync(sd))fs.writeFileSync(sd,fs.readFileSync(sd,'utf8').replace('rootViewController = CAPBridgeViewController()','rootViewController = DiaryViewController()'));}
 const sb=root+'/Base.lproj/Main.storyboard';fs.writeFileSync(sb,fs.readFileSync(sb,'utf8').replace('customClass="CAPBridgeViewController" customModule="Capacitor"','customClass="DiaryViewController" customModule="App"'));
 const p='ios/App/App.xcodeproj/project.pbxproj';let s=fs.readFileSync(p,'utf8');
-for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift','DiaryPhotos.swift'].entries()){
+for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift','DiaryPhotos.swift','DiaryPush.swift'].entries()){
  const file=`D1A00000000000000000000${i}`,build=`D1A10000000000000000000${i}`;if(s.includes(file))continue;
  s=s.replace('/* End PBXBuildFile section */',`${build} /* ${name} in Sources */ = {isa = PBXBuildFile; fileRef = ${file}; };\n/* End PBXBuildFile section */`);
  s=s.replace('/* End PBXFileReference section */',`${file} /* ${name} */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ${name}; sourceTree = "<group>"; };\n/* End PBXFileReference section */`);
@@ -25,6 +25,8 @@ for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift','DiaryPhot
  s=s.replace('504EC3081FED79650016851F /* AppDelegate.swift in Sources */,',`504EC3081FED79650016851F /* AppDelegate.swift in Sources */,\n${build} /* ${name} in Sources */,`);
 }
 s=s.replace(/TARGETED_DEVICE_FAMILY = "1,2";/g,'TARGETED_DEVICE_FAMILY = 1;');
+// Push notifications: aps-environment entitlement (Xcode switches it to production when exporting for TestFlight/App Store).
+if(!s.includes('CODE_SIGN_ENTITLEMENTS'))s=s.replace(/CODE_SIGN_STYLE = Automatic;/g,'CODE_SIGN_ENTITLEMENTS = App/App.entitlements;\n\t\t\t\tCODE_SIGN_STYLE = Automatic;');
 fs.writeFileSync(p,s);
 
 // Localized app name and tracking prompt (ko/en/ja). Other languages fall back to English.

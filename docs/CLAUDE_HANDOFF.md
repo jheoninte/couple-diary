@@ -146,3 +146,7 @@ TestFlight 1403에는 현지화가 포함되어 있지 않습니다. main 머지
   - Mac 터미널에서 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer bash scripts/release-ios.sh` 실행 후 TestFlight 업로드 및 **COMINO Internal** 그룹 추가.
   - 실기기에서 사진 업로드(`firestore:rules` 배포 + 필요 시 `firebase deploy --only storage --project couple-diary-75157`), StoreKit 2 Sandbox 구매·복원, AdMob 배너/전면/ATT 및 `나의 공간`·날짜 입력 레이아웃 확인.
   - `docs/PRIVACY_POLICY.ko.md`, `docs/TERMS_OF_SERVICE.ko.md` 내용을 `comino.app/privacy-p-kr` · `term-p-kr`에 게시.
+
+## 푸시 알림 (2026-11-15)
+
+상대방 새 일기·하트·댓글/답글·커플 연결 알림 추가. 서버가 APNs로 직접 발송하며 `PUSH_ENABLED=true` + `APNS_AUTH_KEY` 시크릿 전까지는 발송하지 않는다. 설정 절차·문구·추가 제안: `docs/PUSH_NOTIFICATIONS.ko.md`. 실기기/Xcode 빌드 미검증.
