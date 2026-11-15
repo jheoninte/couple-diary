@@ -1,44 +1,64 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() { return request.auth != null && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('status', 'active') != 'deleting'; }
+    // Helpers
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+    function coupleDoc(cid) {
+      return firestore.get(/databases/(default)/documents/couples/$(cid)).data;
+    }
+    function signedIn() {
+      return request.auth != null && userDoc().get('status', 'active') != 'deleting';
+    }
+    function isMember(cid) {
+      let c = coupleDoc(cid);
+      return signedIn()
+        && (c.user1 == request.auth.uid || c.user2 == request.auth.uid)
+        && userDoc().coupleId == cid;
+    }
     function activeMember(cid) {
-      let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
-      return signedIn() && couple.status == 'active'
-        && (couple.user1 == request.auth.uid || couple.user2 == request.auth.uid)
-        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.coupleId == cid;
+      return isMember(cid) && coupleDoc(cid).status == 'active';
     }
     function archiveOwner(cid, uid) {
-      let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
-      return signedIn() && request.auth.uid == uid && couple.status == 'closed'
-        && (couple.user1 == uid || couple.user2 == uid);
+      let c = coupleDoc(cid);
+      return signedIn() && request.auth.uid == uid && c.status == 'closed'
+        && (c.user1 == uid || c.user2 == uid);
     }
     function validImage() {
       return request.resource.size <= 512 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
-    function photoSubscription(cid, uid, filename) {
-      let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
+    function hasValidReservation(cid, uid, filename) {
+      let c = coupleDoc(cid);
       let permit = firestore.get(/databases/(default)/documents/couples/$(cid)/photoReservations/$(filename)).data;
-      return couple.get('premiumUntil', 0) > request.time.toMillis()
-        && permit.uid == uid && permit.attached == false && permit.expiresAt > request.time.toMillis();
+      return c.get('premiumUntil', 0) > request.time.toMillis()
+        && permit.uid == uid
+        && permit.attached == false
+        && permit.expiresAt > request.time.toMillis();
     }
+
+    // Current photo path: couples/{coupleId}/{uid}/{filename}.jpg
     match /couples/{cid}/{uid}/{filename} {
       allow read: if activeMember(cid) || archiveOwner(cid, uid);
-      allow create: if resource == null && signedIn() && request.auth.uid == uid && activeMember(cid) && photoSubscription(cid, uid, filename)
+      allow create: if resource == null
+        && signedIn()
+        && request.auth.uid == uid
+        && activeMember(cid)
+        && hasValidReservation(cid, uid, filename)
         && validImage();
-      // Prevent deletion and re-upload with the same reservation. Server owns lifecycle cleanup.
-      allow update, delete: if false;
+      allow update, delete: if false; // Server owns cleanup
     }
-    function legacyPartner(uid) {
-      let cid = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.coupleId;
-      let couple = firestore.get(/databases/(default)/documents/couples/$(cid)).data;
-      return activeMember(cid) && (couple.user1 == uid || couple.user2 == uid);
-    }
+
+    // Legacy path (read-only for migration)
     match /photos/{uid}/{filename} {
-      allow read: if signedIn() && (request.auth.uid == uid || legacyPartner(uid));
+      allow read: if signedIn() && (request.auth.uid == uid || isMember(userDoc().coupleId));
       allow write: if false;
     }
-    match /{allPaths=**} { allow read, write: if false; }
+
+    // Deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
   }
 }
