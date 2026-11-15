@@ -1,5 +1,7 @@
 import { ADS_CONFIG } from "./ads-config.js";
 import { recordSave, canShowInterstitial } from "./monetization-core.js";
+// Banner ads are switched off for now (2026-11-15 decision); flip to true to bring them back.
+const BANNERS_ENABLED = false;
 
 // The CMP and future native SDK adapter must explicitly opt in. Never assume consent.
 export function createAdsController({
@@ -41,7 +43,8 @@ export function createAdsController({
   }
   async function updateBanner() {
     removeBanner();
-    if (!session || session.archive || premium || !consent()) return;
+    // Banner ads are paused for everyone for now; interstitials are unaffected.
+    if (!BANNERS_ENABLED || !session || session.archive || premium || !consent()) return;
     const request = bannerRequest;
     if (native()) {
       const adapter = native();

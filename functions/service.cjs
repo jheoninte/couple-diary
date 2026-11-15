@@ -6,6 +6,11 @@ function check(ok,message='요청 내용을 확인해주세요.'){if(!ok)fail('i
 function date(v){if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;const d=new Date(v+'T00:00:00Z');return v>='1900-01-01'&&v<='2200-12-31'&&Number.isFinite(+d)&&d.toISOString().slice(0,10)===v;}
 function text(v,max){check(typeof v==='string'&&v.trim().length>0&&v.length<=max);return v.trim();}
 function id(v){check(typeof v==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(v));return v;}
+const PHOTO_DAILY=6,PHOTO_MONTHLY=90,PHOTO_ATTEMPTS=30;
+function quota(q,time){const day=new Date(time+9*3600000).toISOString().slice(0,10),month=day.slice(0,7);q=q||{};
+ // Older documents counted every attempt (including failed ones) as usage; carry those over only as attempts.
+ const legacy=q.attempts===undefined;
+ return {day,month,daily:!legacy&&q.day===day?q.daily||0:0,monthly:!legacy&&q.month===month?q.monthly||0:0,attempts:q.day===day?(legacy?q.daily:q.attempts)||0:0};}
 function createService(store,{now=Date.now}={}){
  async function execute(uid,data={}){
   if(!uid)fail('unauthenticated','먼저 로그인해주세요.');id(uid);check(data&&typeof data==='object');
@@ -72,8 +77,9 @@ function createService(store,{now=Date.now}={}){
    }
    if(action==='reservePhoto'||action==='uploadPhoto'){
     if(!(c.premiumUntil>time))fail('permission-denied','사진 업로드는 Plus 구독이 필요합니다.');
-    const day=new Date(time+9*3600000).toISOString().slice(0,10),month=day.slice(0,7),qp=`uploadQuotas/${uid}`,q=await tx.get(qp)||{};
-    const daily=q.day===day?q.daily:0,monthly=q.month===month?q.monthly:0;if(daily>=6||monthly>=90)fail('resource-exhausted','사진 업로드 한도에 도달했습니다.');
+    const qp=`uploadQuotas/${uid}`,q=quota(await tx.get(qp),time);
+    // Only photos attached to a saved diary count toward the published limit; raw attempts get a separate abuse ceiling.
+    if(q.daily>=PHOTO_DAILY||q.monthly>=PHOTO_MONTHLY||q.attempts>=PHOTO_ATTEMPTS)fail('resource-exhausted','사진 업로드 한도에 도달했습니다.');
     const filename=randomUUID()+'.jpg',expiresAt=time+10*60000;
     if(action==='uploadPhoto'){
      const match=typeof data.dataUrl==='string'&&data.dataUrl.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);
@@ -82,9 +88,9 @@ function createService(store,{now=Date.now}={}){
      if(!buffer.length||buffer.length>512*1024||buffer[0]!==0xff||buffer[1]!==0xd8||buffer[2]!==0xff)fail('invalid-argument','사진을 다시 선택해 자동 압축한 뒤 저장해주세요.');
      const path=`couples/${cid}/${uid}/${filename}`;
      await store.savePhoto(path,buffer);
-     tx.set(qp,{day,month,daily:daily+1,monthly:monthly+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false});return {path,filename};
+     tx.set(qp,{...q,attempts:q.attempts+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false});return {path,filename};
     }
-    tx.set(qp,{day,month,daily:daily+1,monthly:monthly+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false});return {filename};
+    tx.set(qp,{...q,attempts:q.attempts+1});tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt,createdAt:time,attached:false});return {filename};
    }
    check(date(data.date));const author=['saveEntry','deleteEntry','restoreEntry'].includes(action)?uid:id(data.author);check([c.user1,c.user2].includes(author));
    const ep=`couples/${cid}/entries/${author}_${data.date}`,old=await tx.get(ep);
@@ -92,6 +98,7 @@ function createService(store,{now=Date.now}={}){
     check(Number.isSafeInteger(data.revision)&&data.revision>=0);if((old?.revision||0)!==data.revision)fail('aborted','다른 화면에서 수정되었습니다. 최신 일기를 다시 불러와주세요.');
     check(Array.isArray(data.photos)&&data.photos.length<=3&&new Set(data.photos).size===data.photos.length);const content=text(data.content,20000),mood=text(data.mood,40);
     const newPhotos=data.photos.filter(p=>!old?.photos?.includes(p));
+    if(newPhotos.length){const qp=`uploadQuotas/${uid}`,q=quota(await tx.get(qp),time);if(q.daily+newPhotos.length>PHOTO_DAILY||q.monthly+newPhotos.length>PHOTO_MONTHLY)fail('resource-exhausted','사진 업로드 한도에 도달했습니다.');tx.set(qp,{...q,daily:q.daily+newPhotos.length,monthly:q.monthly+newPhotos.length});}
     for(const p of newPhotos){check(typeof p==='string');const prefix=`couples/${cid}/${uid}/`;if(!p.startsWith(prefix)||!/^[a-f0-9-]+\.jpg$/.test(p.slice(prefix.length)))fail('permission-denied','유효하지 않은 사진입니다.');
      const rp=`couples/${cid}/photoReservations/${p.slice(prefix.length)}`,r=await tx.get(rp);if(!r||r.uid!==uid||r.attached||r.expiresAt<=time||!(c.premiumUntil>time))fail('permission-denied','사진 업로드 권한이 만료되었습니다.');
      if(store.photoExists&&!await store.photoExists(p))fail('failed-precondition','업로드한 사진을 확인할 수 없습니다.');tx.delete(rp);}

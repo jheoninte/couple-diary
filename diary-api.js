@@ -31,7 +31,11 @@ export async function photoURL(path) {
     const pending=(async()=>{
         let url,size=0,isBlob=false;
         try {
-            const blob=await getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024);
+            // In the iOS WKWebView the Storage download can stall without settling, so the app reads through the
+            // diary function there; browsers try Storage first and fall back after a timeout.
+            if(window.Capacitor?.isNativePlatform?.())throw Object.assign(Error('native photo read'),{code:'native'});
+            const blob=await Promise.race([getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024),
+                new Promise((_,reject)=>setTimeout(()=>reject(Object.assign(Error('photo timeout'),{code:'timeout'})),8000))]);
             size=blob.size;url=URL.createObjectURL(blob);isBlob=true;
         } catch (e) {
             if (e?.code?.endsWith('object-not-found')) throw e;

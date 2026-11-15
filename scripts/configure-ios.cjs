@@ -17,7 +17,7 @@ set('CFBundleDevelopmentRegion','string','ko');
 {const sd=root+'/SceneDelegate.swift';if(fs.existsSync(sd))fs.writeFileSync(sd,fs.readFileSync(sd,'utf8').replace('rootViewController = CAPBridgeViewController()','rootViewController = DiaryViewController()'));}
 const sb=root+'/Base.lproj/Main.storyboard';fs.writeFileSync(sb,fs.readFileSync(sb,'utf8').replace('customClass="CAPBridgeViewController" customModule="Capacitor"','customClass="DiaryViewController" customModule="App"'));
 const p='ios/App/App.xcodeproj/project.pbxproj';let s=fs.readFileSync(p,'utf8');
-for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift'].entries()){
+for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift','DiaryPhotos.swift'].entries()){
  const file=`D1A00000000000000000000${i}`,build=`D1A10000000000000000000${i}`;if(s.includes(file))continue;
  s=s.replace('/* End PBXBuildFile section */',`${build} /* ${name} in Sources */ = {isa = PBXBuildFile; fileRef = ${file}; };\n/* End PBXBuildFile section */`);
  s=s.replace('/* End PBXFileReference section */',`${file} /* ${name} */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ${name}; sourceTree = "<group>"; };\n/* End PBXFileReference section */`);

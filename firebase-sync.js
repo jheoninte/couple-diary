@@ -7,6 +7,8 @@ const ui=window.diaryUI;
 document.getElementById('gateLoginLink').href=pageURL('login.html');
 let session=null,couple=null,records=new Map(),stops=[],entryStop=null,pageSize=100,generation=0,ready=false,entriesLoaded=false,editorInitialized=false;
 const pending=new Set();
+// Photos already uploaded for a failed save are reused on retry so a retry does not upload them (and spend quota) again.
+const uploadCache=new Map();
 const commentRequests=new Map(),anniversaryRequests=new Map();
 function fail(e) {
     ui.status(e.code?.endsWith('permission-denied')?'일기장 접근 권한이 변경되었습니다. 커플 설정을 확인해주세요.':(e.message||'처리하지 못했습니다. 잠시 후 다시 시도해주세요.'),'error');return false;
@@ -75,8 +77,8 @@ window.diaryActions={
             const uploaded=[];let committed=false;
             try{
                 const photos=[];
-                for(const photo of editor.photos){if(photo.startsWith('data:')){const path=await api.uploadPhoto(session.coupleId,photo);uploaded.push(path);photos.push(path);}else photos.push(photo);}
-                const result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos});committed=true;
+                for(const photo of editor.photos){if(photo.startsWith('data:')){const hit=uploadCache.get(photo);const path=hit&&Date.now()-hit.at<8*60000?hit.path:await api.uploadPhoto(session.coupleId,photo);if(path!==hit?.path)uploadCache.set(photo,{path,at:Date.now()});uploaded.push(path);photos.push(path);}else photos.push(photo);}
+                const result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos});committed=true;for(const photo of editor.photos)uploadCache.delete(photo);
                 records.set(`${session.uid}_${editor.date}`,result.entry);
                 const unchanged=JSON.stringify(ui.editor())===JSON.stringify(editor);
                 if(unchanged)ui.clearDraft(editor.date);else{ui.updateRevision(editor.date,result.entry.revision,editor.revision);ui.persistDraft();}
@@ -85,6 +87,7 @@ window.diaryActions={
                 if(!unchanged)return '저장했습니다. 저장 중 추가로 작성한 내용은 초안으로 보관했습니다.';
             }catch(e){
                 const definite=['invalid-argument','permission-denied','aborted','failed-precondition'];
+                if(!committed&&e.code?.endsWith('permission-denied'))for(const photo of editor.photos)uploadCache.delete(photo);
                 if(!committed&&definite.some(c=>e.code?.endsWith(c)))await Promise.allSettled(uploaded.map(api.discardUpload));
                 throw e;
             }

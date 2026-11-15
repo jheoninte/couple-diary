@@ -83,3 +83,16 @@ dialog,
     padding-right: env(safe-area-inset-right);
   }
 }
+/* 2026-11-15: empty-state CTA follows the theme; nav icons stay neutral, the active tab is bold in the theme color. */
+.empty-state-btn{background:var(--primary)!important;color:#fff!important;border:0!important}
+.empty-state-btn:hover{background:var(--secondary)!important}
+.tab-btn:nth-child(2) .ui-icon{color:inherit}
+.tab-btn.active,.nav-settings.active{color:var(--primary)!important;font-weight:800}
+.tab-btn.active .ui-icon,.nav-settings.active .ui-icon{color:var(--primary)!important;stroke-width:2.6}
+/* Subscription legal links sit right under the renewal terms so they are visible without scrolling. */
+.membership-legal{font-size:11px;margin-top:6px}.membership-legal a{color:var(--text-dark,#333);text-decoration:underline}
+/* iOS app: one safe-area offset only (the header already adds it), plus an opaque strip so scrolled content never shows under the clock. */
+.native-ios.diary-page{padding-top:0}
+.native-ios.diary-page::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);background:#fff;z-index:900;pointer-events:none}
+/* Anniversary add button: the + follows the theme like its label. */
+.add-anniversary-btn,.add-anniversary-btn *{color:var(--primary)}

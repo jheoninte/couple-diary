@@ -19,6 +19,8 @@ async function initializeNative() {
     manage: () => store.manage(),
     onTransaction: listener => store.addListener('transactionUpdated', listener),
   };
+  const photos = registerPlugin('DiaryPhotos');
+  window.diaryPhotoPicker = { pick: limit => photos.pick({ limit }).then(r => r.photos || []) };
   // Ads are not initialized on the login page, before membership is known, or for Plus users.
   let sdk, permission = false, started, nonPersonalized = false;
   async function consent() {

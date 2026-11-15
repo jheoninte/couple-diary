@@ -111,7 +111,7 @@ function uiIcon(name) {
             // 현재 선택된 내 아이콘 표시
             document.querySelectorAll('.icon-selector .icon-btn').forEach(btn => {
                 btn.classList.remove('selected');
-                if (btn.textContent === myIcon) {
+                if (btn.textContent.trim() === myIcon) {
                     btn.classList.add('selected');
                 }
             });
@@ -699,7 +699,7 @@ function uiIcon(name) {
         document.getElementById('photoInput').addEventListener('change',e=>addPhotos(e.target.files));
         document.getElementById('cameraInput').addEventListener('change',e=>addPhotos(e.target.files));
         // Camera opens the capture UI directly; album opens the system photo picker. Both keep the Plus gate.
-        document.querySelectorAll('[data-photo-source]').forEach(button=>button.addEventListener('click',()=>{if(window.diaryMonetization&&!window.diaryMonetization.requestPhoto())return;document.getElementById(button.dataset.photoSource==='camera'?'cameraInput':'photoInput').click();}));
+        document.querySelectorAll('[data-photo-source]').forEach(button=>button.addEventListener('click',()=>{if(window.diaryMonetization&&!window.diaryMonetization.requestPhoto())return;if(button.dataset.photoSource!=='camera'&&window.diaryPhotoPicker){const left=3-uploadedPhotos.length;if(left<=0){window.diaryUI.status('사진은 총 3장까지 첨부할 수 있습니다.','error');return;}window.diaryPhotoPicker.pick(left).then(async urls=>{if(!urls.length)return;const files=await Promise.all(urls.map(async(u,i)=>new File([await (await fetch(u)).blob()],`photo-${i}.jpg`,{type:'image/jpeg'})));addPhotos(files);}).catch(()=>document.getElementById('photoInput').click());return;}document.getElementById(button.dataset.photoSource==='camera'?'cameraInput':'photoInput').click();}));
         function displayPhotoPreviews() {
     const preview=document.getElementById('photoPreview');preview.replaceChildren();
     uploadedPhotos.forEach((photo,index)=>{
@@ -933,7 +933,7 @@ function openEditor(date,preserve=true) {
         window.diaryUI.status('이 기기에 보관된 초안을 복원했습니다.','info');
     }
     suppressDraft=false;updateCharCount();displayPhotoPreviews();
-    document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('selected',b.textContent===selectedMoodValue));
+    document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('selected',b.textContent.trim()===selectedMoodValue));
 }
 async function addPhotos(files) {
     if(window.diaryMonetization&&!window.diaryMonetization.requestPhoto())return;
