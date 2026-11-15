@@ -10,10 +10,12 @@ const OWNER_KEY = 'diary.photoCache.owner.v1', INDEX_KEY = 'diary.photoCache.ind
 
 const isNative = () => !!globalThis.window?.Capacitor?.isNativePlatform?.();
 let nativePlugin = null;
+// Returned inside an object: a Capacitor plugin proxy turns every property, `then` included, into a native
+// call, so resolving a promise with the bare proxy never settles.
 async function plugin() {
   if (!isNative()) return null;
   if (!nativePlugin) { const { registerPlugin } = await import('@capacitor/core'); nativePlugin = registerPlugin('DiaryPhotoCache'); }
-  return nativePlugin;
+  return { disk: nativePlugin };
 }
 
 // Batches native photo requests made in the same moment (a feed or album page) into one lookup and one server call.
@@ -89,7 +91,7 @@ export async function webCached(path, download, { storage = globalThis.localStor
 }
 
 export async function clearPhotoCache() {
-  try { await (await plugin())?.clear(); } catch {}
+  try { await (await plugin())?.disk.clear(); } catch {}
   try { await globalThis.caches?.delete(WEB_CACHE); } catch {}
   try { globalThis.localStorage?.removeItem(INDEX_KEY); globalThis.localStorage?.removeItem(OWNER_KEY); } catch {}
 }
@@ -104,7 +106,7 @@ export async function claimPhotoCache(owner) {
 let nativeLoad = null;
 export async function nativePhoto(path, call) {
   if (!nativeLoad) {
-    const disk = await plugin();
+    const { disk } = await plugin();
     nativeLoad = createNativeLoader({ disk, call, toSrc: file => globalThis.window.Capacitor.convertFileSrc(file) });
   }
   return nativeLoad(path);
