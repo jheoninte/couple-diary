@@ -27,25 +27,27 @@ const photoCache=new Map();
 let cachedBytes=0;
 export async function photoURL(path) {
     if(photoCache.has(path))return photoCache.get(path).promise;
-    const item={size:0,url:null,promise:null};
+    const item={size:0,url:null,isBlob:false,promise:null};
     const pending=(async()=>{
-        let blob;
+        let url,size=0,isBlob=false;
         try {
-            blob=await getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024);
+            const blob=await getBlob(ref(storage,path),(path.startsWith('photos/')?20:2)*1024*1024);
+            size=blob.size;url=URL.createObjectURL(blob);isBlob=true;
         } catch (e) {
-            if (!e?.code?.endsWith('unauthorized') && !e?.code?.endsWith('permission-denied')) throw e;
+            if (e?.code?.endsWith('object-not-found')) throw e;
             const { dataUrl } = await call('readPhoto', { path });
-            blob = await (await fetch(dataUrl)).blob();
+            url = dataUrl;
+            size = dataUrl.length;
         }
-        item.size=blob.size;item.url=URL.createObjectURL(blob);cachedBytes+=item.size;
-        for(const [key,old]of photoCache){if(cachedBytes<=64*1024*1024)break;if(key!==path&&old.url){URL.revokeObjectURL(old.url);cachedBytes-=old.size;photoCache.delete(key);}}
+        item.size=size;item.url=url;item.isBlob=isBlob;cachedBytes+=item.size;
+        for(const [key,old]of photoCache){if(cachedBytes<=64*1024*1024)break;if(key!==path&&old.url){if(old.isBlob)URL.revokeObjectURL(old.url);cachedBytes-=old.size;photoCache.delete(key);}}
         return item.url;
     })();
     item.promise=pending;photoCache.set(path,item);
     try {return await pending;} catch(e){photoCache.delete(path);throw e;}
 }
 export async function clearPhotos() {
-    for(const item of photoCache.values())try{URL.revokeObjectURL(await item.promise);}catch{}
+    for(const item of photoCache.values())try{const url=await item.promise;if(item.isBlob)URL.revokeObjectURL(url);}catch{}
     photoCache.clear();cachedBytes=0;
 }
 export async function uploadPhoto(cid,dataURL) {

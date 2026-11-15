@@ -531,7 +531,7 @@ function uiIcon(name) {
             if (entry.photos && entry.photos.length > 0) {
                 html += '<div class="diary-images">';
                 entry.photos.forEach(photo => {
-                    html += `<img data-photo-path="${escapeHTML(photo)}" class="diary-image" alt="사진" loading="lazy">`;
+                    html += `<img data-photo-path="${escapeHTML(photo)}" class="diary-image" alt="사진">`;
                 });
                 html += '</div>';
             }
@@ -752,7 +752,7 @@ function uiIcon(name) {
             } else {
                 grid.innerHTML = allPhotos.map(photo => 
                     `<div class="memory-item">
-                        <img data-photo-path="${escapeHTML(photo.path)}" loading="lazy" alt="${escapeHTML(t('{date} 함께한 순간',{date:photo.date}))}">
+                        <img data-photo-path="${escapeHTML(photo.path)}" alt="${escapeHTML(t('{date} 함께한 순간',{date:photo.date}))}">
                         ${photo.date?`<span class="memory-date">${escapeHTML(photo.date.replaceAll('-','.'))}</span>`:''}
                     </div>`
                 ).join('');
@@ -884,6 +884,8 @@ function uiIcon(name) {
             
             if (tabName === 'memories') {
                 updateMemories();
+            } else if (tabName === 'calendar') {
+                observePhotos();
             }
             document.querySelector('.app-header')?.scrollIntoView?.({block:'start'});
         }
@@ -895,9 +897,9 @@ function uiIcon(name) {
             photoObserver=new IntersectionObserver(changes=>{
                 for(const change of changes){
                     const image=change.target;image.dataset.inView=String(change.isIntersecting);
-                    if(!change.isIntersecting){image.removeAttribute('src');continue;}
+                    if(!change.isIntersecting||image.getAttribute('src'))continue;
                     window.diaryActions?.photoURL(image.dataset.photoPath).then(url=>{
-                        if(image.isConnected&&image.dataset.inView==='true')image.src=url;
+                        if(image.isConnected)image.src=url;
                     }).catch(()=>{image.alt='사진을 불러오지 못했습니다';window.diaryUI.status('일부 사진을 불러오지 못했습니다. 기록과 사진 경로는 유지됩니다.','error');});
                 }
             },{rootMargin:'120px'});
