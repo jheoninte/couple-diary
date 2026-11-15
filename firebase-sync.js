@@ -23,6 +23,7 @@ async function action(key,buttonId,fn) {
 async function render() {
     if(!session||!couple||!entriesLoaded)return;
     const current=++generation;
+    const scrollY=window.scrollY;
     const data={entries:{},partnerEntries:{},settings:couple.settings,anniversaries:couple.anniversaries,startDate:couple.startDate,partnerUid:couple.user1===session.uid?couple.user2:couple.user1};
     for(const entry of [...records.values()].filter(e=>!e.deletedAt)){
         const photoPaths=[...(entry.photos||[])],photos=photoPaths;
@@ -31,6 +32,8 @@ async function render() {
     }
     if(current!==generation)return;
     ui.render(data);
+    // Restore scroll after render for large feeds
+    if(scrollY>0)requestAnimationFrame(()=>window.scrollTo(0,scrollY));
     if(!editorInitialized){ui.openEditor(localDate(),false);editorInitialized=true;}
     if(!ready){ready=true;document.getElementById('authGate').hidden=true;if(location.hash==='#settings'){history.replaceState(null,'',location.pathname+location.search);window.openSettings?.();}ui.status(session.archive?'보관함 · 내 일기만 읽을 수 있습니다.':'최신 기록을 불러왔습니다.','success');}
 }
@@ -39,7 +42,9 @@ function subscribeEntries() {
     entryStop=api.watchEntries(session.coupleId,session.archive,snap=>{
         records=new Map(snap.docs.map(d=>[d.id,d.data()]));entriesLoaded=true;
         document.getElementById('recordScope').textContent=t(session.archive?'보관함 · 최근 {n}개 기록을 불러왔습니다. 검색·달력·사진은 불러온 기록을 기준으로 표시합니다.':'최근 {n}개 기록을 불러왔습니다. 검색·달력·사진은 불러온 기록을 기준으로 표시합니다.',{n:snap.size});
-        document.getElementById('loadOlderBtn').hidden=snap.size<pageSize;
+        const older=document.getElementById('loadOlderBtn');
+        older.hidden=snap.size<pageSize;
+        if(snap.size>=300)older.textContent='더 이전 기록 불러오기 ('+snap.size+')';
         render().catch(fail);
     },e=>{fail(e);document.getElementById('loadingMessage').textContent='기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';},pageSize);
 }
@@ -111,16 +116,13 @@ window.diaryActions={
     },
     toggleLike(date,type='partner'){const e=target(date,type);return action(`like-${e.author}-${date}`,null,()=>api.call('like',{coupleId:session.coupleId,author:e.author,date,liked:!(e.likedBy||[]).includes(session.uid)}));}
 };
-document.getElementById('loadOlderBtn').onclick=()=>{pageSize+=100;subscribeEntries();};
+document.getElementById('loadOlderBtn').onclick=()=>{const y=window.scrollY;pageSize+=100;subscribeEntries();setTimeout(()=>window.scrollTo(0,y),50);};
 document.getElementById('logoutBtn').onclick=async()=>{ui.persistDraft();try{await signOut(auth);}catch(e){fail(e);}};
 window.addEventListener('offline',()=>ui.status('오프라인입니다. 작성 중인 초안은 이 기기에 보관됩니다.','info'));
 window.addEventListener('online',()=>ui.status('인터넷에 다시 연결되었습니다. 저장 버튼으로 초안을 저장해주세요.','info'));
 
-// Wait for auth persistence to be fully ready before treating the session as usable.
-// On iOS Capacitor this avoids the first-load race after sign-in.
 async function waitForAuthReady() {
     if(auth.authStateReady) await auth.authStateReady();
-    // Extra small delay for IndexedDB persistence on native WebView
     if(window.Capacitor?.isNativePlatform?.()) await new Promise(r => setTimeout(r, 120));
     return auth.currentUser;
 }
@@ -129,7 +131,6 @@ onAuthStateChanged(auth, async user => {
     window.dispatchEvent(new CustomEvent('diary:context',{detail:null}));
     stops.forEach(stop=>stop());stops=[];entryStop?.();generation++;ready=false;entriesLoaded=false;editorInitialized=false;records.clear();document.getElementById('authGate').hidden=false;await api.clearPhotos();
 
-    // Ensure persistence is ready (especially important right after login on iOS)
     const readyUser = await waitForAuthReady();
     if(!readyUser){location.replace(pageURL('login.html'));return;}
 
@@ -153,7 +154,7 @@ onAuthStateChanged(auth, async user => {
             },fail));
             if(!session.archive)stops.push(api.watchUser(value=>{if(value.coupleId!==session.coupleId){ui.persistDraft();location.replace(pageURL('couple-connect.html'));}},fail));
             subscribeEntries();
-            return; // success
+            return;
         } catch(e) {
             attempt++;
             if(attempt >= maxAttempts) {
@@ -162,7 +163,6 @@ onAuthStateChanged(auth, async user => {
                 document.getElementById('loadingMessage').textContent='기록을 준비하지 못했습니다. 잠시 후 다시 시도해주세요.';
                 return;
             }
-            // Brief pause before retry (helps with transient auth/persistence lag)
             await new Promise(r => setTimeout(r, 400));
         }
     }
