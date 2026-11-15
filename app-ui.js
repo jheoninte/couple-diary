@@ -20,7 +20,9 @@ function uiIcon(name) {
         let entries = {};
         let partnerEntries = {};
         let uploadedPhotos = [];
-        let selectedMoodValue = '';
+        // New entries start with the first mood (smiling face) already chosen.
+        const DEFAULT_MOOD = '😊';
+        let selectedMoodValue = DEFAULT_MOOD;
         let autosaveTimer = null;
         let startDate = localDate();
         let myIcon = '🐶';
@@ -658,8 +660,8 @@ function uiIcon(name) {
             document.getElementById('photoInput').value = '';document.getElementById('cameraInput').value = '';
             document.getElementById('charCount').textContent = '0';
             uploadedPhotos = [];
-            selectedMoodValue = '';
-            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            selectedMoodValue = DEFAULT_MOOD;
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.toggle('selected', b.textContent.trim() === DEFAULT_MOOD));
         }
 
         // 일기 수정
@@ -929,12 +931,11 @@ function openEditor(date,preserve=true) {
     if(preserve)persistDraft(editorDate);
     suppressDraft=true;resetForm();editorDate=date;document.getElementById('entryDate').value=date;
     const existing=entries[date];
-    if(existing){document.getElementById('diaryContent').value=existing.content;selectedMoodValue=existing.mood||'';uploadedPhotos=[...(existing.photoPaths||[])];editingRevision=existing.revision||0;}
+    if(existing){document.getElementById('diaryContent').value=existing.content;selectedMoodValue=existing.mood||DEFAULT_MOOD;uploadedPhotos=[...(existing.photoPaths||[])];editingRevision=existing.revision||0;}
     const draft=session?readJSON(localStorage,draftKey(session.uid,session.coupleId,date),null):null;
     if(draft&&typeof draft.content==='string'&&(!draft.photos||(Array.isArray(draft.photos)&&draft.photos.every(p=>typeof p==='string')))) {
-        document.getElementById('diaryContent').value=draft.content;selectedMoodValue=draft.mood||'';
+        document.getElementById('diaryContent').value=draft.content;selectedMoodValue=draft.mood||DEFAULT_MOOD;
         uploadedPhotos=Array.isArray(draft.photos)?draft.photos.slice(0,3):[];editingRevision=Number.isSafeInteger(draft.revision)?draft.revision:0;
-        window.diaryUI.status('이 기기에 보관된 초안을 복원했습니다.','info');
     }
     suppressDraft=false;updateCharCount();displayPhotoPreviews();
     document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('selected',b.textContent.trim()===selectedMoodValue));
@@ -988,6 +989,8 @@ window.diaryUI={
         if(selectedDate)displayDateEntries(selectedDate);
         if(document.getElementById('settingsModal').classList.contains('active'))renderAnniversaryList();
     },
+    // Brief confirmation on the button itself instead of a toast (e.g. settings "Save").
+    flashButton(id,label){const b=document.getElementById(id);if(!b)return;if(!b._flash)b._label=b.textContent;clearTimeout(b._flash);b.textContent=t(label);b._flash=setTimeout(()=>{b.textContent=b._label;b._flash=null;},1500);},
     status(message,kind='info'){const el=document.getElementById('syncStatus');el.textContent=message;el.dataset.kind=kind;flashMessage(el);},
     saved(date){selectedDate=date;switchTab('calendar',document.querySelector('.tab-btn'));displayDateEntries(date);document.querySelector('.entries-panel')?.scrollIntoView?.({block:'start'});},
     closeSettings, cancelAnniversaryForm, displayDateEntries

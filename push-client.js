@@ -97,8 +97,7 @@ async function mountNative() {
   const toggles = { diary: document.getElementById('notifyDiary'), reactions: document.getElementById('notifyReactions'), anniversaries: document.getElementById('notifyAnniversaries') };
 
   const reportStatus = result => {
-    if (result === 'granted') ui()?.status('알림을 켰습니다.', 'success');
-    else if (result === 'error') ui()?.status('알림을 켜지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
+    if (result === 'error') ui()?.status('알림을 켜지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     render();
   };
   const client = createPushClient({
@@ -143,7 +142,7 @@ async function mountNative() {
   });
   for (const input of Object.values(toggles)) input?.addEventListener('change', async () => {
     const notify = Object.fromEntries(Object.entries(toggles).map(([key, el]) => [key, el.checked]));
-    try { await client.savePreferences(notify); ui()?.status('알림 설정을 저장했습니다.', 'success'); }
+    try { await client.savePreferences(notify); }
     catch { input.checked = !input.checked; ui()?.status('알림 설정을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error'); }
   });
   await plugin.addListener('opened', data => client.opened(data));

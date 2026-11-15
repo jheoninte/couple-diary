@@ -19,8 +19,9 @@ async function action(key,buttonId,fn) {
     if(pending.has(key))return false;
     if(!navigator.onLine){ui.status('오프라인입니다. 초안은 이 기기에 보관됩니다. 연결 후 다시 저장해주세요.','info');return false;}
     pending.add(key);const button=document.getElementById(buttonId);if(button)button.disabled=true;
-    ui.status(navigator.onLine?'저장 중…':'인터넷 연결을 확인해주세요. 초안은 이 기기에 보관됩니다.','saving');
-    try{const result=await fn();ui.status(typeof result==='string'?result:'서버에 저장했습니다.','success');return true;}
+    // Like a social feed, success shows up in place (the entry, heart or comment appears); no "saving"/"saved" toasts.
+    // Toasts are kept for errors and for results the screen cannot show (returned as a string).
+    try{const result=await fn();if(typeof result==='string')ui.status(result,'success');return true;}
     catch(e){return fail(e);}finally{pending.delete(key);if(button)button.disabled=false;}
 }
 async function render() {
@@ -38,7 +39,7 @@ async function render() {
     // Restore scroll after render for large feeds
     if(scrollY>0)requestAnimationFrame(()=>window.scrollTo(0,scrollY));
     if(!editorInitialized){ui.openEditor(localDate(),false);editorInitialized=true;}
-    if(!ready){ready=true;document.getElementById('authGate').hidden=true;window.dispatchEvent(new Event('diary:ready'));if(location.hash==='#settings'){history.replaceState(null,'',location.pathname+location.search);window.openSettings?.();}ui.status(session.archive?'보관함 · 내 일기만 읽을 수 있습니다.':'최신 기록을 불러왔습니다.','success');}
+    if(!ready){ready=true;document.getElementById('authGate').hidden=true;window.dispatchEvent(new Event('diary:ready'));if(location.hash==='#settings'){history.replaceState(null,'',location.pathname+location.search);window.openSettings?.();}if(session.archive)ui.status('보관함 · 내 일기만 읽을 수 있습니다.','info');}
 }
 function subscribeEntries() {
     entryStop?.();ready=false;
@@ -107,6 +108,7 @@ window.diaryActions={
     saveSettings(){return action('settings','saveSettingsBtn',async()=>{
         const state=ui.state(),settings={icon:state.myIcon,theme:state.currentTheme,appTitle:document.getElementById('appTitleInput').value.trim()||'우리의 공간',displayName:document.getElementById('displayNameInput').value.trim()||'나'};
         await api.call('settings',{coupleId:session.coupleId,settings,startDate:document.getElementById('startDateInput').value,birthDate:document.getElementById('birthDateInput')?.value||''});
+        ui.flashButton('saveSettingsBtn','저장됨 ✓');
     });},
     saveAnniversary(){return action('anniversary','saveAnniversaryBtn',async()=>{
         const data={coupleId:session.coupleId,name:document.getElementById('anniversaryName').value.trim(),date:document.getElementById('anniversaryDate').value,icon:ui.state().selectedAnniversaryIcon,recurring:document.getElementById('anniversaryRecurring').checked},key=JSON.stringify(data);
@@ -132,7 +134,6 @@ window.diaryActions={
 document.getElementById('loadOlderBtn').onclick=()=>{const y=window.scrollY;pageSize+=100;subscribeEntries();setTimeout(()=>window.scrollTo(0,y),50);};
 document.getElementById('logoutBtn').onclick=async()=>{ui.persistDraft();try{await window.diaryPush?.signOut();await signOut(auth);}catch(e){fail(e);}};
 window.addEventListener('offline',()=>ui.status('오프라인입니다. 작성 중인 초안은 이 기기에 보관됩니다.','info'));
-window.addEventListener('online',()=>ui.status('인터넷에 다시 연결되었습니다. 저장 버튼으로 초안을 저장해주세요.','info'));
 
 async function waitForAuthReady() {
     if(auth.authStateReady) await auth.authStateReady();
