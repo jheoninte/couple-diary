@@ -3,6 +3,7 @@
 import { call, getUser } from './diary-api.js';
 import { t } from './i18n.js';
 import { formatTemp, fresh, summary, LEGAL_URL } from './weather-core.js';
+import { localDate } from './web-core.js';
 
 const CACHE_KEY = 'diary.weather.v1', PLACE_KEY = 'diary.weather.place.v1';
 const REFRESH_MS = 30 * 60000, ENTRY_MAX_AGE = 3 * 3600000, PARTNER_MAX_AGE = 6 * 3600000;
@@ -60,6 +61,12 @@ export function createWeather({ plugin, call: callServer, getUser: readUser, sto
       if (!on) await callServer('weather', { coupleId: session.coupleId, share: false });
       else { await callServer('weather', { coupleId: session.coupleId, share: true }); sharedAt = 0; if (mine) mine = { ...mine, sharedFor: null }; await shareMine(); }
     },
+    // Before saving today's diary: refresh the weather if it is allowed (never prompts), waiting at most 4s.
+    async ensureFor(date, today, wait = 4000) {
+      if (date !== today) return undefined;
+      try { await Promise.race([load(), new Promise(resolve => setTimeout(resolve, wait))]); } catch {}
+      return this.forEntry(date, today);
+    },
     // The weather recorded on a diary written today; nothing for past dates or stale readings.
     forEntry(date, today) {
       if (date !== today || !fresh(mine, ENTRY_MAX_AGE, now()) || (mine.query || '') !== place()) return undefined;
@@ -90,7 +97,34 @@ async function mount() {
   window.diaryWeather = weather;
   let couple = null, uid = null;
 
+  // Write screen: the entry's recorded weather, today's weather that will be recorded, or a way to add it.
+  const editorBox = document.getElementById('editorWeather');
+  let editorDate = localDate();
+  function renderEditor() {
+    if (!editorBox) return;
+    editorBox.replaceChildren();
+    const recorded = window.diaryUI?.state?.().entries?.[editorDate]?.weather;
+    const today = editorDate === localDate(), { mine, supported } = weather.state;
+    if (recorded?.icon) {
+      editorBox.append(el('span', 'editor-weather-value', `${recorded.icon} ${formatTemp(recorded.temp)}`), el('span', 'editor-weather-note', t('이 일기의 날씨')));
+    } else if (today && mine) {
+      editorBox.append(el('span', 'editor-weather-value', `${summary(mine).icon} ${formatTemp(mine.temp)}${mine.city ? ' · ' + mine.city : ''}`), el('span', 'editor-weather-note', t('저장할 때 일기에 함께 기록돼요')));
+    } else if (today && plugin && supported) {
+      const button = el('button', 'editor-weather-add', t('📍 오늘 날씨 추가')); button.type = 'button';
+      button.onclick = async () => {
+        button.disabled = true;
+        try { const result = await weather.load({ ask: true }); if (result === 'denied') await choosePlace(); }
+        catch { window.diaryUI?.status('날씨를 불러오지 못했어요. 잠시 후 다시 시도해주세요.', 'error'); }
+        render();
+      };
+      editorBox.append(button);
+    }
+    editorBox.hidden = !editorBox.childElementCount;
+  }
+  window.addEventListener('diary:editor', event => { editorDate = event.detail?.date || localDate(); renderEditor(); });
+
   function render() {
+    renderEditor();
     const { mine, status, supported, place } = weather.state;
     mineBox.replaceChildren();
     if (mine) {

@@ -9,7 +9,8 @@ globalThis.__diaryWeatherTest=true;
 const source=fs.readFileSync(new URL('../weather.js',import.meta.url),'utf8')
  .replace("import { call, getUser } from './diary-api.js';","const call=null,getUser=null;")
  .replace("import { t } from './i18n.js';","const t=s=>s;")
- .replace("from './weather-core.js'",`from '${new URL('../weather-core.js',import.meta.url)}'`);
+ .replace("from './weather-core.js'",`from '${new URL('../weather-core.js',import.meta.url)}'`)
+ .replace("from './web-core.js'",`from '${new URL('../web-core.js',import.meta.url)}'`);
 const {createWeather,partnerWeather}=await import('data:text/javascript,'+encodeURIComponent(source));
 
 test('SF Symbol names become one simple emoji',()=>{
@@ -76,3 +77,13 @@ test('iOS project: weather plugin, WeatherKit entitlement, weak link and approxi
  const cfg=read('scripts/configure-ios.cjs');assert.match(cfg,/'DiaryWeather\.swift'/);assert.match(cfg,/-weak_framework/);
 });
 test('summary drops everything but the shareable fields',()=>{assert.deepEqual(summary({symbol:'cloud',temp:3.5,city:'A',lat:1}),{icon:'☁️',temp:4,city:'A'});assert.equal(fresh({at:0},10,5),true);});
+
+test('saving today refreshes stale weather without prompting; past dates get none',async()=>{
+ let time=1e12;const p=plugin('granted'),w=createWeather({plugin:p,call:async()=>{},getUser:async()=>({}),storage:memory(),now:()=>time});
+ await w.context({uid:'a',coupleId:'c'});await w.load();time+=5*3600000;
+ assert.equal(w.forEntry('2026-11-15','2026-11-15'),undefined);
+ assert.deepEqual(await w.ensureFor('2026-11-15','2026-11-15'),{icon:'☀️',temp:18});assert.equal(p.calls.length,2);assert.equal(p.calls[1].ask,false);
+ assert.equal(await w.ensureFor('2026-11-14','2026-11-15'),undefined);
+ const fresh=plugin('prompt'),never=createWeather({plugin:fresh,call:async()=>{},getUser:async()=>({}),storage:memory()});
+ assert.equal(await never.ensureFor('2026-11-15','2026-11-15'),undefined);assert.equal(fresh.calls.length,0,'no location prompt while saving');
+});

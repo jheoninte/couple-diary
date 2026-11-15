@@ -932,6 +932,7 @@ function openEditor(date,preserve=true) {
     }
     suppressDraft=false;updateCharCount();displayPhotoPreviews();
     document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('selected',b.textContent.trim()===selectedMoodValue));
+    window.dispatchEvent(new CustomEvent('diary:editor',{detail:{date}}));
 }
 async function addPhotos(files) {
     if(window.diaryMonetization&&!window.diaryMonetization.requestPhoto())return;

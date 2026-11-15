@@ -126,3 +126,10 @@ html.keyboard-open .app-toast{bottom:calc(16px + env(safe-area-inset-bottom))}
 .weather-attribution img{height:11px;width:auto;display:block}
 .diary-weather{margin-left:8px;color:#888}
 .notify-note{font-size:11px;color:#888;line-height:1.6;margin:8px 0 0}
+
+/* Write screen weather chip */
+.editor-weather{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.editor-weather[hidden]{display:none}
+.editor-weather-value{display:inline-flex;align-items:center;padding:6px 12px;background:#f7f7f7;border-radius:99px;font-size:13px;font-weight:600;color:#333}
+.editor-weather-note{font-size:11px;color:#888}
+.editor-weather-add{padding:6px 12px;background:#fff;border:1px dashed #ccc;border-radius:99px;font-size:13px;font-weight:600;color:var(--primary);cursor:pointer}
