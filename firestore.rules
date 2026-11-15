@@ -24,6 +24,12 @@ service cloud.firestore {
           || (member(couple()) && couple().status == 'closed' && resource.data.author == request.auth.uid));
         allow write: if false;
       }
+      // Storage rules need to read the reservation when uploading a photo.
+      match /photoReservations/{filename} {
+        allow get: if signedIn() && resource.data.uid == request.auth.uid
+          && active(get(/databases/$(database)/documents/couples/$(cid)).data, cid);
+        allow list, write: if false;
+      }
     }
     // Invitation codes and original migration backups are server-only.
     match /{document=**} { allow read, write: if false; }
