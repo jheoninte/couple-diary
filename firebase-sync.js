@@ -79,8 +79,6 @@ window.diaryActions={
                 window.dispatchEvent(new CustomEvent('diary:saved'));
                 if(!unchanged)return '저장했습니다. 저장 중 추가로 작성한 내용은 초안으로 보관했습니다.';
             }catch(e){
-                // A timeout can follow a successful server commit. Never delete uploaded
-                // objects on ambiguous network errors: that could break the committed entry.
                 const definite=['invalid-argument','permission-denied','aborted','failed-precondition'];
                 if(!committed&&definite.some(c=>e.code?.endsWith(c)))await Promise.allSettled(uploaded.map(api.discardUpload));
                 throw e;
@@ -117,25 +115,55 @@ document.getElementById('loadOlderBtn').onclick=()=>{pageSize+=100;subscribeEntr
 document.getElementById('logoutBtn').onclick=async()=>{ui.persistDraft();try{await signOut(auth);}catch(e){fail(e);}};
 window.addEventListener('offline',()=>ui.status('오프라인입니다. 작성 중인 초안은 이 기기에 보관됩니다.','info'));
 window.addEventListener('online',()=>ui.status('인터넷에 다시 연결되었습니다. 저장 버튼으로 초안을 저장해주세요.','info'));
-onAuthStateChanged(auth,async user=>{
+
+// Wait for auth persistence to be fully ready before treating the session as usable.
+// On iOS Capacitor this avoids the first-load race after sign-in.
+async function waitForAuthReady() {
+    if(auth.authStateReady) await auth.authStateReady();
+    // Extra small delay for IndexedDB persistence on native WebView
+    if(window.Capacitor?.isNativePlatform?.()) await new Promise(r => setTimeout(r, 120));
+    return auth.currentUser;
+}
+
+onAuthStateChanged(auth, async user => {
     window.dispatchEvent(new CustomEvent('diary:context',{detail:null}));
     stops.forEach(stop=>stop());stops=[];entryStop?.();generation++;ready=false;entriesLoaded=false;editorInitialized=false;records.clear();document.getElementById('authGate').hidden=false;await api.clearPhotos();
-    if(!user){location.replace(pageURL('login.html'));return;}
-    try{
-        const archiveId=new URLSearchParams(location.search).get('archive'),initial=archiveId?{coupleId:archiveId}:await api.call('initialize');
-        if(!initial.coupleId){location.replace(pageURL('couple-connect.html'));return;}
-        session={uid:user.uid,coupleId:initial.coupleId,archive:!!archiveId};ui.session(session);couple=await api.getCouple(session.coupleId);
-        window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
-        document.getElementById('coupleConnectionLink').href=pageURL('couple-connect.html');
-        const deletionLink=document.getElementById('accountDeletionLink');if(deletionLink)deletionLink.href=pageURL('account-delete.html');
-        const licensesLink=document.getElementById('licensesLink');if(licensesLink)licensesLink.href=pageURL('licenses.html');
-        if(!couple)throw Error('일기장을 찾을 수 없습니다.');
-        if(session.archive){document.querySelector('.intro-write')?.setAttribute('hidden','');document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.nav-settings').hidden=true;}
-        stops.push(api.watchCouple(session.coupleId,value=>{
-            if(!value||(!session.archive&&value.status!=='active')){ui.persistDraft();location.replace(pageURL('couple-connect.html'));return;}
-            couple=value;render().catch(fail);window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
-        },fail));
-        if(!session.archive)stops.push(api.watchUser(value=>{if(value.coupleId!==session.coupleId){ui.persistDraft();location.replace(pageURL('couple-connect.html'));}},fail));
-        subscribeEntries();
-    }catch(e){fail(e);document.getElementById('startupRecovery').hidden=false;document.getElementById('loadingMessage').textContent='기록을 준비하지 못했습니다. 잠시 후 다시 시도해주세요.';}
+
+    // Ensure persistence is ready (especially important right after login on iOS)
+    const readyUser = await waitForAuthReady();
+    if(!readyUser){location.replace(pageURL('login.html'));return;}
+
+    let attempt = 0;
+    const maxAttempts = 2;
+    while(attempt < maxAttempts) {
+        try {
+            const archiveId = new URLSearchParams(location.search).get('archive');
+            const initial = archiveId ? {coupleId: archiveId} : await api.call('initialize');
+            if(!initial.coupleId){location.replace(pageURL('couple-connect.html'));return;}
+            session={uid:readyUser.uid,coupleId:initial.coupleId,archive:!!archiveId};ui.session(session);couple=await api.getCouple(session.coupleId);
+            window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
+            document.getElementById('coupleConnectionLink').href=pageURL('couple-connect.html');
+            const deletionLink=document.getElementById('accountDeletionLink');if(deletionLink)deletionLink.href=pageURL('account-delete.html');
+            const licensesLink=document.getElementById('licensesLink');if(licensesLink)licensesLink.href=pageURL('licenses.html');
+            if(!couple)throw Error('일기장을 찾을 수 없습니다.');
+            if(session.archive){document.querySelector('.intro-write')?.setAttribute('hidden','');document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.nav-settings').hidden=true;}
+            stops.push(api.watchCouple(session.coupleId,value=>{
+                if(!value||(!session.archive&&value.status!=='active')){ui.persistDraft();location.replace(pageURL('couple-connect.html'));return;}
+                couple=value;render().catch(fail);window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
+            },fail));
+            if(!session.archive)stops.push(api.watchUser(value=>{if(value.coupleId!==session.coupleId){ui.persistDraft();location.replace(pageURL('couple-connect.html'));}},fail));
+            subscribeEntries();
+            return; // success
+        } catch(e) {
+            attempt++;
+            if(attempt >= maxAttempts) {
+                fail(e);
+                document.getElementById('startupRecovery').hidden=false;
+                document.getElementById('loadingMessage').textContent='기록을 준비하지 못했습니다. 잠시 후 다시 시도해주세요.';
+                return;
+            }
+            // Brief pause before retry (helps with transient auth/persistence lag)
+            await new Promise(r => setTimeout(r, 400));
+        }
+    }
 });
