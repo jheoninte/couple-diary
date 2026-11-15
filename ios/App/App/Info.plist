@@ -36,6 +36,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>일기에 첨부할 사진을 촬영하기 위해 카메라를 사용합니다.</string>
+	<key>NSLocationDefaultAccuracyReduced</key>
+	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>현재 지역의 날씨를 보여주기 위해 대략적인 위치를 사용합니다. 위치는 저장하거나 공유하지 않으며, 상대방에게는 도시 이름과 날씨만 보입니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>일기에 첨부할 사진을 앨범에서 선택하기 위해 사진 보관함에 접근합니다.</string>
 	<key>NSUserTrackingUsageDescription</key>

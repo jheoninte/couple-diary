@@ -2,6 +2,7 @@ import holidays from './holidays-data.js';
 import './monetization.js';
 import './keyboard-aware.js';
 import {t,fmt} from './i18n.js';
+import {formatTemp,WEATHER_ICONS} from './weather-core.js';
 import { preparePhoto } from './image-processing.js';
 import {localDate, validDate, dayNumber, togetherDays, escapeHTML, safePhotoURL, readJSON, draftKey, anniversaryTarget, LIMITS} from './web-core.js';
 const SUBSTITUTE_HOLIDAY=/ \(대체공휴일\)$/;
@@ -287,26 +288,15 @@ function uiIcon(name) {
             }
             
             document.getElementById('calendarDays').innerHTML = html;
-            const selectedDay=selectedDate.startsWith(`${year}-${String(month+1).padStart(2,'0')}-`)?Number(selectedDate.slice(-2)):1;
-            const weekStart=Math.floor((startingDayOfWeek+selectedDay-1)/7)*7;
-            [...document.getElementById('calendarDays').children].forEach((cell,i)=>cell.classList.toggle('outside-week',i<weekStart||i>=weekStart+7));
         }
 
-        function setCalendarExpanded(expanded) {
-            document.querySelector('.calendar-card').classList.toggle('expanded',expanded);
-            const button=document.getElementById('calendarViewToggle');
-            button.setAttribute('aria-expanded',String(expanded));button.textContent=expanded?'주간 보기':'월 전체';
-        }
-        window.toggleCalendarView=()=>setCalendarExpanded(document.getElementById('calendarViewToggle').getAttribute('aria-expanded')!=='true');
 
         function prevMonth() {
-            setCalendarExpanded(true);
             currentDate.setMonth(currentDate.getMonth() - 1);
             renderCalendar();
         }
 
         function nextMonth() {
-            setCalendarExpanded(true);
             currentDate.setMonth(currentDate.getMonth() + 1);
             renderCalendar();
         }
@@ -528,7 +518,7 @@ function uiIcon(name) {
                                     <span>${escapeHTML(writerName)}</span>
                                 </span>
                             </div>
-                            <div class="diary-date">${dateStr}</div>
+                            <div class="diary-date">${dateStr}${entry.weather&&WEATHER_ICONS.includes(entry.weather.icon)?`<span class="diary-weather" data-i18n-ignore>${entry.weather.icon} ${escapeHTML(formatTemp(entry.weather.temp))}</span>`:''}</div>
                         </div>
                         <div class="diary-mood">${escapeHTML(entry.mood || '😊')}</div>
                     </div>

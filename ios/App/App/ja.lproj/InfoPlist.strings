@@ -2,3 +2,4 @@
 "NSUserTrackingUsageDescription" = "広告の表示と広告効果の測定のために、端末の識別子を使用することがあります。許可しなくても日記はご利用いただけます。";
 "NSCameraUsageDescription" = "日記に添付する写真を撮影するためにカメラを使用します。";
 "NSPhotoLibraryUsageDescription" = "日記に添付する写真をアルバムから選ぶために写真ライブラリにアクセスします。";
+"NSLocationWhenInUseUsageDescription" = "現在地の天気を表示するために、おおよその位置情報を使用します。位置情報は保存・共有されず、パートナーには都市名と天気のみが表示されます。";

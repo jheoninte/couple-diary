@@ -9,6 +9,9 @@ set('NSUserTrackingUsageDescription','string','광고 제공과 광고 성과 �
 set('ITSAppUsesNonExemptEncryption','bool','false');
 set('NSCameraUsageDescription','string','일기에 첨부할 사진을 촬영하기 위해 카메라를 사용합니다.');
 set('NSPhotoLibraryUsageDescription','string','일기에 첨부할 사진을 앨범에서 선택하기 위해 사진 보관함에 접근합니다.');
+// Weather: approximate location only, requested when the person taps "show my weather".
+set('NSLocationWhenInUseUsageDescription','string','현재 지역의 날씨를 보여주기 위해 대략적인 위치를 사용합니다. 위치는 저장하거나 공유하지 않으며, 상대방에게는 도시 이름과 날씨만 보입니다.');
+set('NSLocationDefaultAccuracyReduced','bool','true');
 // iPhone only: no iPad layout or screenshots are maintained.
 spawnSync('/usr/libexec/PlistBuddy',['-c','Delete :UISupportedInterfaceOrientations~ipad',plist]);
 set('CFBundleDevelopmentRegion','string','ko');
@@ -17,7 +20,7 @@ set('CFBundleDevelopmentRegion','string','ko');
 {const sd=root+'/SceneDelegate.swift';if(fs.existsSync(sd))fs.writeFileSync(sd,fs.readFileSync(sd,'utf8').replace('rootViewController = CAPBridgeViewController()','rootViewController = DiaryViewController()'));}
 const sb=root+'/Base.lproj/Main.storyboard';fs.writeFileSync(sb,fs.readFileSync(sb,'utf8').replace('customClass="CAPBridgeViewController" customModule="Capacitor"','customClass="DiaryViewController" customModule="App"'));
 const p='ios/App/App.xcodeproj/project.pbxproj';let s=fs.readFileSync(p,'utf8');
-for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift','DiaryPhotos.swift','DiaryPush.swift'].entries()){
+for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift','DiaryPhotos.swift','DiaryPush.swift','DiaryWeather.swift'].entries()){
  const file=`D1A00000000000000000000${i}`,build=`D1A10000000000000000000${i}`;if(s.includes(file))continue;
  s=s.replace('/* End PBXBuildFile section */',`${build} /* ${name} in Sources */ = {isa = PBXBuildFile; fileRef = ${file}; };\n/* End PBXBuildFile section */`);
  s=s.replace('/* End PBXFileReference section */',`${file} /* ${name} */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ${name}; sourceTree = "<group>"; };\n/* End PBXFileReference section */`);
@@ -26,14 +29,16 @@ for(const [i,name] of ['DiaryStore.swift','DiaryViewController.swift','DiaryPhot
 }
 s=s.replace(/TARGETED_DEVICE_FAMILY = "1,2";/g,'TARGETED_DEVICE_FAMILY = 1;');
 // Push notifications: aps-environment entitlement (Xcode switches it to production when exporting for TestFlight/App Store).
+// WeatherKit needs iOS 16; weak-link it so the app still launches on iOS 15 (weather is hidden there).
+if(!s.includes('-weak_framework'))s=s.replace(/SWIFT_VERSION = 5\.0;/g,'OTHER_LDFLAGS = (\n\t\t\t\t\t"$(inherited)",\n\t\t\t\t\t"-weak_framework",\n\t\t\t\t\tWeatherKit,\n\t\t\t\t);\n\t\t\t\tSWIFT_VERSION = 5.0;');
 if(!s.includes('CODE_SIGN_ENTITLEMENTS'))s=s.replace(/CODE_SIGN_STYLE = Automatic;/g,'CODE_SIGN_ENTITLEMENTS = App/App.entitlements;\n\t\t\t\tCODE_SIGN_STYLE = Automatic;');
 fs.writeFileSync(p,s);
 
 // Localized app name and tracking prompt (ko/en/ja). Other languages fall back to English.
 const strings={
- ko:{CFBundleDisplayName:'우리의 공간',NSUserTrackingUsageDescription:'광고 제공과 광고 성과 측정을 위해 기기 식별자를 사용할 수 있습니다. 허용하지 않아도 일기를 이용할 수 있습니다.',NSCameraUsageDescription:'일기에 첨부할 사진을 촬영하기 위해 카메라를 사용합니다.',NSPhotoLibraryUsageDescription:'일기에 첨부할 사진을 앨범에서 선택하기 위해 사진 보관함에 접근합니다.'},
- en:{CFBundleDisplayName:'Our Diary',NSUserTrackingUsageDescription:'Your device identifier may be used to show ads and measure ad performance. You can use the diary even if you choose not to allow it.',NSCameraUsageDescription:'The camera is used to take photos to attach to your diary entries.',NSPhotoLibraryUsageDescription:'Your photo library is used to choose photos to attach to your diary entries.'},
- ja:{CFBundleDisplayName:'今日のふたり',NSUserTrackingUsageDescription:'広告の表示と広告効果の測定のために、端末の識別子を使用することがあります。許可しなくても日記はご利用いただけます。',NSCameraUsageDescription:'日記に添付する写真を撮影するためにカメラを使用します。',NSPhotoLibraryUsageDescription:'日記に添付する写真をアルバムから選ぶために写真ライブラリにアクセスします。'}
+ ko:{CFBundleDisplayName:'우리의 공간',NSUserTrackingUsageDescription:'광고 제공과 광고 성과 측정을 위해 기기 식별자를 사용할 수 있습니다. 허용하지 않아도 일기를 이용할 수 있습니다.',NSCameraUsageDescription:'일기에 첨부할 사진을 촬영하기 위해 카메라를 사용합니다.',NSPhotoLibraryUsageDescription:'일기에 첨부할 사진을 앨범에서 선택하기 위해 사진 보관함에 접근합니다.',NSLocationWhenInUseUsageDescription:'현재 지역의 날씨를 보여주기 위해 대략적인 위치를 사용합니다. 위치는 저장하거나 공유하지 않으며, 상대방에게는 도시 이름과 날씨만 보입니다.'},
+ en:{CFBundleDisplayName:'Our Diary',NSUserTrackingUsageDescription:'Your device identifier may be used to show ads and measure ad performance. You can use the diary even if you choose not to allow it.',NSCameraUsageDescription:'The camera is used to take photos to attach to your diary entries.',NSPhotoLibraryUsageDescription:'Your photo library is used to choose photos to attach to your diary entries.',NSLocationWhenInUseUsageDescription:'Your approximate location is used to show the weather where you are. It is never stored or shared; your partner sees only the city name and the weather.'},
+ ja:{CFBundleDisplayName:'今日のふたり',NSUserTrackingUsageDescription:'広告の表示と広告効果の測定のために、端末の識別子を使用することがあります。許可しなくても日記はご利用いただけます。',NSCameraUsageDescription:'日記に添付する写真を撮影するためにカメラを使用します。',NSPhotoLibraryUsageDescription:'日記に添付する写真をアルバムから選ぶために写真ライブラリにアクセスします。',NSLocationWhenInUseUsageDescription:'現在地の天気を表示するために、おおよその位置情報を使用します。位置情報は保存・共有されず、パートナーには都市名と天気のみが表示されます。'}
 };
 {
  let proj=fs.readFileSync(p,'utf8');

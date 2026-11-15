@@ -2554,15 +2554,6 @@ dialog > button {
     padding-bottom: 108px;
   }
 }
-.calendar-nav .calendar-view-toggle {
-  display: none;
-  font-family: inherit;
-  font-size: 10px;
-  width: auto;
-  padding: 0 8px;
-  border-radius: 8px;
-  color: var(--text-light);
-}
 .diary-images {
   scrollbar-width: none;
 }
@@ -2575,12 +2566,6 @@ body:has(.modal.active) {
   overflow: hidden;
 }
 @media (max-width: 800px) {
-  .calendar-card:not(.expanded) .outside-week {
-    display: none;
-  }
-  .calendar-nav .calendar-view-toggle {
-    display: block;
-  }
   .calendar-header {
     margin-bottom: 10px;
   }

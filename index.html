@@ -526,6 +526,11 @@
           저장하기
         </button>
         <div class="settings-bottom">
+          <div class="notify-setting" id="weatherSetting" hidden>
+            <p class="notify-title">날씨</p>
+            <label class="notify-row"><span>내 지역 날씨를 상대방에게 보여주기</span><input type="checkbox" id="weatherShare" role="switch" checked /></label>
+            <p class="notify-note">도시 이름과 날씨만 보여요. 정확한 위치는 저장하지 않아요.</p>
+          </div>
           <div class="notify-setting" id="notifySetting" hidden>
             <p class="notify-title">알림</p>
             <div class="notify-permission" id="notifyPermission" hidden>
@@ -640,52 +645,12 @@
 
       <!-- 달력 섹션 -->
       <section id="calendar" class="section active">
-        <div class="journal-intro">
-          <div>
-            <p class="eyebrow">LITTLE MOMENTS, BIG LOVE</p>
-            <h2>오늘도,<br />너와 나의 이야기<span>.</span></h2>
-            <p class="intro-description">
-              오늘의 마음도, 오래 기억하고 싶은 순간도.
-            </p>
-            <button class="intro-write" onclick="goToWrite()">
-              오늘의 이야기 남기기
-              <svg
-                class="ui-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.65"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M5 12h14m-5-5 5 5-5 5" />
-              </svg>
-            </button>
-          </div>
-          <div class="together-art" aria-hidden="true">
-            <span class="orbit orbit-one"></span
-            ><span class="orbit orbit-two"></span>
-            <div class="art-heart">
-              <svg
-                class="ui-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.65"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path
-                  d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
-                />
-              </svg>
-            </div>
-            <span class="art-spark">✧</span
-            ><span class="art-caption">better together</span>
-          </div>
-        </div>
+        <!-- 오늘의 날씨 (weather.js). 내 지역은 누를 때만 위치 권한을 요청하고, 상대방 날씨는 공유한 경우에만 표시 -->
+        <section class="weather-strip" id="weatherStrip" aria-label="오늘의 날씨" hidden>
+          <div class="weather-mine" id="weatherMine"></div>
+          <div class="weather-partner" id="weatherPartner" hidden></div>
+        </section>
+        <button type="button" class="weather-attribution" id="weatherAttribution" hidden></button>
         <!-- 다가오는 기념일 알림 -->
         <div id="upcomingAnniversary"></div>
 
@@ -739,15 +704,6 @@
               <div class="calendar-header">
                 <h3 class="calendar-month" id="currentMonth"></h3>
                 <div class="calendar-nav">
-                  <button
-                    class="calendar-view-toggle"
-                    id="calendarViewToggle"
-                    aria-expanded="false"
-                    aria-controls="calendarDays"
-                    onclick="toggleCalendarView()"
-                  >
-                    월 전체
-                  </button>
                   <button aria-label="이전 달" onclick="prevMonth()"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
                   <button aria-label="다음 달" onclick="nextMonth()"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>

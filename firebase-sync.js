@@ -4,6 +4,7 @@ import * as api from './diary-api.js';
 import {validDate, localDate, LIMITS} from './web-core.js';
 import {t} from './i18n.js';
 import './push-client.js';
+import './weather.js';
 const ui=window.diaryUI;
 document.getElementById('gateLoginLink').href=pageURL('login.html');
 let session=null,couple=null,records=new Map(),stops=[],entryStop=null,pageSize=100,generation=0,ready=false,entriesLoaded=false,editorInitialized=false;
@@ -81,13 +82,13 @@ window.diaryActions={
                 const photos=[];
                 for(const photo of editor.photos){if(photo.startsWith('data:')){const hit=uploadCache.get(photo);const path=hit&&Date.now()-hit.at<8*60000?hit.path:await api.uploadPhoto(session.coupleId,photo);if(path!==hit?.path)uploadCache.set(photo,{path,at:Date.now()});uploaded.push(path);photos.push(path);}else photos.push(photo);}
                 let result;
-                try{result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos});}
+                try{result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos,weather:window.diaryWeather?.forEntry(editor.date,localDate())});}
                 catch(e){
                     // Only this author writes this entry, so a revision mismatch means an older copy (stale draft or
                     // another device of the same user). Retry once against the server's latest revision.
                     if(!e.code?.endsWith('aborted'))throw e;
                     const latest=await api.getEntry(session.coupleId,editor.date);
-                    result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos,revision:latest?.revision||0});
+                    result=await api.call('saveEntry',{coupleId:session.coupleId,...editor,photos,revision:latest?.revision||0,weather:window.diaryWeather?.forEntry(editor.date,localDate())});
                 }
                 committed=true;for(const photo of editor.photos)uploadCache.delete(photo);
                 records.set(`${session.uid}_${editor.date}`,result.entry);
@@ -161,10 +162,10 @@ onAuthStateChanged(auth, async user => {
             const deletionLink=document.getElementById('accountDeletionLink');if(deletionLink)deletionLink.href=pageURL('account-delete.html');
             const licensesLink=document.getElementById('licensesLink');if(licensesLink)licensesLink.href=pageURL('licenses.html');
             if(!couple)throw Error('일기장을 찾을 수 없습니다.');
-            if(session.archive){document.querySelector('.intro-write')?.setAttribute('hidden','');document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.nav-settings').hidden=true;}
+            if(session.archive){document.querySelectorAll('.tab-btn')[1].hidden=true;document.querySelector('.nav-settings').hidden=true;}
             stops.push(api.watchCouple(session.coupleId,value=>{
                 if(!value||(!session.archive&&value.status!=='active')){ui.persistDraft();location.replace(pageURL('couple-connect.html'));return;}
-                couple=value;render().catch(fail);window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));
+                couple=value;render().catch(fail);window.dispatchEvent(new CustomEvent('diary:context',{detail:{...session}}));window.dispatchEvent(new CustomEvent('diary:couple',{detail:value}));
             },fail));
             if(!session.archive)stops.push(api.watchUser(value=>{ui.setBirthDate(value.birthDate||'');if(value.coupleId!==session.coupleId){ui.persistDraft();location.replace(pageURL('couple-connect.html'));}},fail));
             subscribeEntries();

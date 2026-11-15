@@ -1,4 +1,4 @@
-const MUTATIONS=new Set(['createSpace','join','invite','disconnect','settings','anniversaryAdd','anniversaryDelete','reservePhoto','uploadPhoto','saveEntry','deleteEntry','restoreEntry','like','commentAdd','commentEdit','commentDelete','pushRegister','pushUnregister','pushPrefs']);
+const MUTATIONS=new Set(['createSpace','join','invite','disconnect','settings','anniversaryAdd','anniversaryDelete','reservePhoto','uploadPhoto','saveEntry','deleteEntry','restoreEntry','like','commentAdd','commentEdit','commentDelete','pushRegister','pushUnregister','pushPrefs','weather']);
 async function reserveOperation(tx,uid,action,now){
  if(!MUTATIONS.has(action))return true;
  const path=`operationLimits/${uid}`,old=await tx.get(path)||{},day=new Date(now+9*3600000).toISOString().slice(0,10),minute=Math.floor(now/60000);

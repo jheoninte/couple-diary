@@ -11,6 +11,15 @@ function check(ok,message='요청 내용을 확인해주세요.'){if(!ok)fail('i
 function date(v){if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;const d=new Date(v+'T00:00:00Z');return v>='1900-01-01'&&v<='2200-12-31'&&Number.isFinite(+d)&&d.toISOString().slice(0,10)===v;}
 function text(v,max){check(typeof v==='string'&&v.trim().length>0&&v.length<=max);return v.trim();}
 function id(v){check(typeof v==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(v));return v;}
+// Weather is summarised on the device (WeatherKit); only an icon, temperatures in °C and a city name reach the server.
+const WEATHER_ICONS=new Set(['☀️','🌙','⛅','☁️','🌧️','⛈️','🌨️','🌫️','💨','🌡️']);
+const temp=v=>Number.isFinite(v)&&v>=-90&&v<=70?Math.round(v):null;
+function weatherOf(v,{city=false}={}){
+ if(!v||typeof v!=='object'||!WEATHER_ICONS.has(v.icon)||temp(v.temp)===null)return null;
+ const row={icon:v.icon,temp:temp(v.temp)};
+ if(city){row.city=typeof v.city==='string'?v.city.trim().slice(0,60):'';if(temp(v.high)!==null)row.high=temp(v.high);if(temp(v.low)!==null)row.low=temp(v.low);}
+ return row;
+}
 const PHOTO_DAILY=6,PHOTO_MONTHLY=90,PHOTO_ATTEMPTS=30;
 function quota(q,time){const day=new Date(time+9*3600000).toISOString().slice(0,10),month=day.slice(0,7);q=q||{};
  // Older documents counted every attempt (including failed ones) as usage; carry those over only as attempts.
@@ -79,6 +88,16 @@ function createService(store,{now=Date.now,notify}={}){
    }
    const cid=id(data.coupleId),cp=`couples/${cid}`,c=await tx.get(cp);
    if(!c||c.status!=='active'||c.schemaVersion!==2||user.coupleId!==cid||![c.user1,c.user2].includes(uid))fail('permission-denied','이 일기장에 접근할 수 없습니다.');
+   if(action==='weather'){
+    // share:false removes this member's weather from the space and stops future updates until share:true.
+    const shared={...(c.weather||{})};
+    if(data.share===false){delete shared[uid];tx.set(userPath,{...user,shareWeather:false});tx.set(cp,{...c,weather:shared});return {};}
+    if(data.share===true&&!data.weather){tx.set(userPath,{...user,shareWeather:true});return {};}
+    if(user.shareWeather===false&&data.share!==true)return {};
+    const row=weatherOf(data.weather,{city:true});check(row);
+    if(data.share===true)tx.set(userPath,{...user,shareWeather:true});
+    tx.set(cp,{...c,weather:{...shared,[uid]:{...row,at:time}}});return {};
+   }
    if(action==='membership')return {premium:c.premiumUntil>time,premiumUntil:c.premiumUntil||0,plans:{monthly:{amount:4900},yearly:{amount:39900}}};
    if(action==='invite'){
     if(c.user2)fail('failed-precondition','이미 연결된 일기장입니다.');if(c.inviteCode)tx.delete(`invitations/${c.inviteCode}`);
@@ -139,7 +158,9 @@ function createService(store,{now=Date.now,notify}={}){
       const filename=p.split('/').at(-1);tx.set(`couples/${cid}/photoReservations/${filename}`,{uid,expiresAt:time,createdAt:time,attached:false});
      }
     }
-    const entry={...(old||{}),author:uid,date:data.date,content,mood,photos:data.photos,revision:data.revision+1,comments:old?.comments||[],likedBy:old?.likedBy||[],createdAt:old?.createdAt||time,updatedAt:time,deletedAt:null};
+    // The day's weather is recorded once, when the entry is first written; edits keep it.
+    const dayWeather=old?.weather||weatherOf(data.weather);
+    const entry={...(old||{}),...(dayWeather?{weather:dayWeather}:{}),author:uid,date:data.date,content,mood,photos:data.photos,revision:data.revision+1,comments:old?.comments||[],likedBy:old?.likedBy||[],createdAt:old?.createdAt||time,updatedAt:time,deletedAt:null};
     // Announce a diary to the partner once; later edits, deletes and restores stay quiet.
     const partner=[c.user1,c.user2].find(u=>u&&u!==uid);
     if(partner&&!old?.announcedAt){entry.announcedAt=time;events.push({kind:'diary',to:partner,coupleId:cid,author:uid,date:data.date,name:c.settings?.[uid]?.displayName,thread:`diary-${cid}`});}

@@ -56,10 +56,11 @@ async function advanceDeletion({db,bucket,auth},uid,{now=Date.now,batchSize=100}
     const c=(await tx.get(cr)).data();if(!c)return;
     const settings={...(c.settings||{})};delete settings[uid];
     const birthdays={...(c.birthdays||{})},timeZones={...(c.timeZones||{})};delete birthdays[uid];delete timeZones[uid];
+    const weather={...(c.weather||{})};delete weather[uid];
     const user1=c.user1===uid?null:c.user1,user2=c.user2===uid?null:c.user2;
     // Shared relationship metadata has no reliable per-author attribution in v2.
     if(!user1&&!user2)tx.delete(cr);
-    else tx.update(cr,{user1,user2,settings,birthdays,timeZones,anniversaries:[],startDate:null,inviteCode:null,inviteExpiresAt:0});
+    else tx.update(cr,{user1,user2,settings,birthdays,timeZones,weather,anniversaries:[],startDate:null,inviteCode:null,inviteExpiresAt:0});
    });
    await patch({phase:'spaces',coupleId:null,cursor:null});
   }else if(job.phase==='legacyPhotos'){
