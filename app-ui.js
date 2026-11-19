@@ -110,6 +110,7 @@ function uiIcon(name) {
             nav?.classList.toggle('active', active);
             if (active) { nav?.setAttribute('aria-current','page'); document.querySelectorAll('.tab-btn').forEach(b => {b.classList.remove('active');b.removeAttribute('aria-current');}); }
             else nav?.removeAttribute('aria-current');
+            if(active)window.dispatchEvent(new CustomEvent('diary:section-changed',{detail:{to:'settings',userInitiated:true}}));
         }
         function openSettings() {
             setSettingsTab(true);
@@ -870,7 +871,8 @@ function uiIcon(name) {
         function goToWriteWithDate(dateStr) { openEditor(dateStr); switchTab('write',document.querySelectorAll('.tab-btn')[1]); }
 
         // 탭 전환
-        function switchTab(tabName, btnElement) {
+        function switchTab(tabName, btnElement, {automatic=false}={}) {
+            const from=document.querySelector('.section.active')?.id;
             closeSettings();
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => {b.classList.remove('active');b.removeAttribute('aria-current');});
@@ -887,6 +889,7 @@ function uiIcon(name) {
                 observePhotos();
             }
             document.querySelector('.app-header')?.scrollIntoView?.({block:'start'});
+            window.dispatchEvent(new CustomEvent('diary:section-changed',{detail:{from,to:tabName,userInitiated:!automatic}}));
         }
 
         let photoObserver=null;
@@ -986,7 +989,7 @@ window.diaryUI={
     // Brief confirmation on the button itself instead of a toast (e.g. settings "Save").
     flashButton(id,label){const b=document.getElementById(id);if(!b)return;if(!b._flash)b._label=b.textContent;clearTimeout(b._flash);b.textContent=t(label);b._flash=setTimeout(()=>{b.textContent=b._label;b._flash=null;},1500);},
     status(message,kind='info'){const el=document.getElementById('syncStatus');el.textContent=message;el.dataset.kind=kind;flashMessage(el);},
-    saved(date){selectedDate=date;switchTab('calendar',document.querySelector('.tab-btn'));displayDateEntries(date);document.querySelector('.entries-panel')?.scrollIntoView?.({block:'start'});},
+    saved(date){selectedDate=date;switchTab('calendar',document.querySelector('.tab-btn'),{automatic:true});displayDateEntries(date);document.querySelector('.entries-panel')?.scrollIntoView?.({block:'start'});},
     closeSettings, cancelAnniversaryForm, displayDateEntries
 };
 

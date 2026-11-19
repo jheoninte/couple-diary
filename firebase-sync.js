@@ -96,7 +96,7 @@ window.diaryActions={
                 const unchanged=JSON.stringify(ui.editor())===JSON.stringify(editor);
                 if(unchanged)ui.clearDraft(editor.date);else{ui.updateRevision(editor.date,result.entry.revision,editor.revision);ui.persistDraft();}
                 await render();if(unchanged)ui.saved(editor.date);
-                window.dispatchEvent(new CustomEvent('diary:saved'));
+                window.dispatchEvent(new CustomEvent('diary:saved',{detail:{isNew:result.entry.revision===1,returnedToRecords:unchanged}}));
                 if(!unchanged)return '저장했습니다. 저장 중 추가로 작성한 내용은 초안으로 보관했습니다.';
             }catch(e){
                 const definite=['invalid-argument','permission-denied','aborted','failed-precondition'];

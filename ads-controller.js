@@ -1,164 +1,77 @@
-import { ADS_CONFIG } from "./ads-config.js";
-import { recordSave, canShowInterstitial } from "./monetization-core.js";
-// Banner ads are switched off for now (2026-11-15 decision); flip to true to bring them back.
-const BANNERS_ENABLED = false;
+import { ADS_CONFIG } from './ads-config.js';
+import { AD_POLICY, adState, recordSave, canShowInterstitial } from './monetization-core.js';
 
-// The CMP and future native SDK adapter must explicitly opt in. Never assume consent.
-export function createAdsController({
-  config = ADS_CONFIG,
-  storage = null,
-  now = () => Date.now(),
-} = {}) {
-  if (!storage) {
-    try {
-      storage = window.localStorage;
-    } catch {
-      /* No storage means no interstitials. */
-    }
-  }
-  let session = null,
-    premium = true,
-    banner = null,
-    bannerRequest = 0,
-    lastContext = "";
-  const consent = () => {
-    try {
-      return window.diaryAdConsent?.canRequestAds?.() === true;
-    } catch {
-      return false;
-    }
+// Membership and consent must both be known before requesting mobile ads.
+export function createAdsController({config=ADS_CONFIG,storage=null,now=()=>Date.now()}={}) {
+  if(!storage)try{storage=window.localStorage;}catch{}
+  let session=null,premium=true,contextKey='',generation=0;
+  let sessionStarted=now(),sessionShown=false,pending=null;
+  const native=()=>config.provider==='native'?window.diaryNativeAds:null;
+  const eligible=()=>{
+    try{return !!session?.uid&&!!session?.coupleId&&!session.archive&&!premium&&window.diaryAdConsent?.canRequestAds?.()===true;}
+    catch{return false;}
   };
-  const native = () =>
-    config.provider === "native" ? window.diaryNativeAds : null;
-  function removeBanner() {
-    bannerRequest++;
-    banner?.replaceChildren();
-    banner = null;
-    document.getElementById("adBanner").hidden = true;
-    try {
-      Promise.resolve(native()?.hideBanner?.()).catch(() => {});
-    } catch {
-      /* SDK errors cannot block records. */
-    }
+  const stateKey=()=>`diary:ads:v2:${session.uid}`;
+  function read(){return adState(JSON.parse(storage.getItem(stateKey())||'null'),now());}
+  function write(counts){storage.setItem(stateKey(),JSON.stringify(counts));}
+  function safeScreen(){return document.visibilityState==='visible'&&
+    !window.diaryBilling?.busy&&
+    !document.documentElement.classList.contains('keyboard-open')&&
+    !document.querySelector('#authGate:not([hidden]),dialog[open],.settings-modal.active,.confirm-modal.active,.modal.active')&&
+    !document.querySelector('input:focus,textarea:focus,[contenteditable="true"]:focus');}
+  async function updateBanner(){
+    const adapter=native();if(!adapter)return;
+    if(eligible())await adapter.showBanner();else await adapter.hideBanner();
   }
-  async function updateBanner() {
-    removeBanner();
-    // Banner ads are paused for everyone for now; interstitials are unaffected.
-    if (!BANNERS_ENABLED || !session || session.archive || premium || !consent()) return;
-    const request = bannerRequest;
-    if (native()) {
-      const adapter = native();
-      await adapter.showBanner?.();
-      if (request !== bannerRequest || premium || !consent()) {
-        try {
-          await adapter.hideBanner?.();
-        } catch {
-          /* The next render also clears banners. */
-        }
-      }
-      return;
-    }
-    if (
-      config.provider !== "adsense" ||
-      !/^ca-pub-\d{16}$/.test(config.publisherId) ||
-      !/^\d{10}$/.test(config.bannerSlot)
-    )
-      return;
-    if (!document.getElementById("adsense-loader")) {
-      const script = document.createElement("script");
-      script.id = "adsense-loader";
-      script.async = true;
-      script.crossOrigin = "anonymous";
-      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${config.publisherId}`;
-      script.onload = () => {
-        if (request === bannerRequest) mount();
-      };
-      script.onerror = removeBanner;
-      document.head.append(script);
-    } else mount();
-    function mount() {
-      if (request !== bannerRequest || premium || !consent() || !session)
-        return;
-      banner = document.getElementById("adBannerMount");
-      const ad = document.createElement("ins");
-      ad.className = "adsbygoogle";
-      ad.style.display = "block";
-      ad.dataset.adClient = config.publisherId;
-      ad.dataset.adSlot = config.bannerSlot;
-      ad.dataset.adFormat = "horizontal";
-      ad.dataset.fullWidthResponsive = "true";
-      banner.append(ad);
-      document.getElementById("adBanner").hidden = false;
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch {
-        removeBanner();
-      }
-    }
+  function prefetch(){
+    if(!eligible()||!config.interstitialEnabled||sessionShown)return;
+    try{if(canShowInterstitial(read(),now()))Promise.resolve(native()?.prepareInterstitial?.()).catch(()=>{});}catch{}
   }
   return {
-    update(context, isPremium) {
-      const key = JSON.stringify([
-        context?.uid,
-        context?.coupleId,
-        context?.archive,
-        isPremium,
-      ]);
-      session = context;
-      premium = isPremium;
-      if (lastContext === key) return Promise.resolve();
-      lastContext = key;
-      return updateBanner();
+    async update(context,isPremium){
+      const key=JSON.stringify([context?.uid,context?.coupleId,context?.archive]);
+      if(key!==contextKey){generation++;pending=null;sessionShown=false;sessionStarted=now();contextKey=key;}
+      session=context;premium=isPremium!==false;
+      if(premium)pending=null;
+      if(session&&!session.archive&&!premium)try{write(read());}catch{}
+      await updateBanner();prefetch();
     },
-    reset() {
-      premium = true;
-      session = null;
-      lastContext = "";
-      removeBanner();
+    reset(){
+      generation++;session=null;premium=true;contextKey='';pending=null;
+      Promise.resolve(native()?.hideBanner?.()).catch(()=>{});
     },
-    consentChanged() {
-      return updateBanner();
+    async consentChanged(){if(!eligible())pending=null;await updateBanner();prefetch();},
+    suspend(){pending=null;},
+    afterSave({isNew=false,returnedToRecords=false}={}){
+      if(!session||session.archive||premium||!isNew)return;
+      try{write(recordSave(read(),now()));}catch{return;}
+      // Saving never opens an ad. Only a later explicit browsing transition may do so.
+      pending=returnedToRecords?{at:now(),generation}:null;
+      prefetch();
     },
-    async afterSave() {
-      if (
-        !session ||
-        session.archive ||
-        premium ||
-        !config.interstitialEnabled ||
-        !native() ||
-        !consent()
-      )
-        return;
-      const key = `diary:ads:v1:${session.uid}`;
+    async sectionChanged({from,to,userInitiated=false}={}){
+      const opportunity=pending;
+      if(!userInitiated||from===to)return;
+      if(to==='write'||to==='settings'){pending=null;return;}
+      if(!['calendar','memories'].includes(from)||!['calendar','memories'].includes(to))return;
+      if(!opportunity)return;
+      const age=now()-opportunity.at;
+      if(age<AD_POLICY.afterSaveMs)return;
+      pending=null; // Never queue an ad to appear later if this transition is missed.
+      const transitionAt=now();
+      const stillSafe=()=>opportunity.generation===generation&&eligible()&&safeScreen()&&
+        now()-transitionAt<=AD_POLICY.maximumTransitionDelayMs&&
+        !!document.querySelector(`#${to}.active`);
+      if(age>AD_POLICY.opportunityMs||now()-sessionStarted<AD_POLICY.minimumSessionMs||
+         sessionShown||!config.interstitialEnabled||!stillSafe()||!native()?.isInterstitialReady?.())return;
       let counts;
-      try {
-        counts = recordSave(JSON.parse(storage.getItem(key) || "null"), now());
-        storage.setItem(key, JSON.stringify(counts));
-      } catch {
-        return;
-      }
-      if (
-        !canShowInterstitial(counts, now()) ||
-        document.visibilityState !== "visible" ||
-        !document.querySelector("#calendar.active") ||
-        document.querySelector(
-          "dialog[open],.settings-modal.active,.confirm-modal.active,.modal.active",
-        )
-      )
-        return;
-      // Reserve before showing: failures skip an opportunity rather than repeat ads.
-      counts.shown++;
-      counts.lastShown = now();
-      try {
-        storage.setItem(key, JSON.stringify(counts));
-      } catch {
-        return;
-      }
-      try {
-        await native().showInterstitial?.();
-      } catch {
-        /* Ads never block saved records. */
-      }
+      try{
+        counts=read();if(!canShowInterstitial(counts,now()))return;
+        write({...counts,shown:counts.shown+1,lastShown:now(),lastShownSave:counts.saves});
+      }catch{return;}
+      // Reserve first: SDK failures never cause another attempt in this session.
+      sessionShown=true;
+      try{await native().showInterstitial({canShow:stillSafe});}catch{}
     },
   };
 }

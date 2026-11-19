@@ -209,7 +209,9 @@ window.addEventListener("diary:context", (event) => {
   render();
   refresh();
 });
-window.addEventListener("diary:saved", () => ads.afterSave());
+window.addEventListener("diary:saved", event => ads.afterSave(event.detail));
+window.addEventListener('diary:section-changed',event=>{void ads.sectionChanged(event.detail);});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')ads.suspend();});
 window.addEventListener("diary:ad-consent-changed", () =>
   ads.consentChanged().catch(() => ads.reset()),
 );

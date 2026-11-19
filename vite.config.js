@@ -10,7 +10,7 @@ export default defineConfig(({mode}) => {
   plugins: [{ name: 'bundle-firebase', enforce: 'pre', transform(code, id) {
     if (!id.includes('node_modules') && id.split('?')[0].endsWith('.js')) return code.replace(/https:\/\/www\.gstatic\.com\/firebasejs\/[\d.]+\/firebase-([a-z-]+)\.js/g, 'firebase/$1');
   }}],
-  build: { target: 'es2022', rollupOptions: { input: Object.fromEntries(
+  build: { target: 'es2022', manifest: true, rollupOptions: { input: Object.fromEntries(
     ['index', 'login', 'couple-connect', 'account-delete', 'licenses', 'onboarding'].map(name => [name, resolve(import.meta.dirname, `${name}.html`)])) } }
 };
 });

@@ -1,5 +1,6 @@
 // Public IDs only. AdMob's native SDK cannot serve ads in a normal web browser.
-// Keep off until the website is approved and a consent-management integration exists.
+// Mobile banners and interstitials require confirmed free membership and UMP permission.
+// Web ad serving stays disabled.
 export const ADS_CONFIG = Object.freeze({
   provider: typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() ? "native" : "none",
   publisherId: "", // Web AdSense ca-pub-****************, NOT an AdMob app ID

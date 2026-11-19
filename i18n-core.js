@@ -1,4 +1,18 @@
-import catalogs from './locales/catalogs.json' with {type:'json'};
+import english from './locales/split/en.json' with {type:'json'};
+import {localeLoaders} from './locales/loaders.js';
+const catalogs={en:english};
+const loading=new Map();
+export async function loadLocale(locale){
+  if(locale==='ko'||catalogs[locale])return;
+  if(!supported.has(locale))throw new RangeError(`Unsupported locale: ${locale}`);
+  if(!loading.has(locale)){
+    const request=localeLoaders[locale]()
+      .then(module=>{catalogs[locale]=module.default;})
+      .finally(()=>loading.delete(locale));
+    loading.set(locale,request);
+  }
+  return loading.get(locale);
+}
 export const SUPPORTED_LOCALES=Object.freeze([['ko','한국어'],['en','English'],['ja','日本語'],['zh-Hant','繁體中文'],['zh-Hans','简体中文'],['es','Español'],['pt-BR','Português (Brasil)'],['fr','Français'],['id','Bahasa Indonesia'],['vi','Tiếng Việt'],['de','Deutsch'],['th','ไทย'],['ms','Bahasa Melayu'],['it','Italiano'],['ru','Русский'],['tr','Türkçe'],['ar','العربية'],['hi','हिन्दी']].map(([code,name])=>({code,name})));
 const supported=new Set(SUPPORTED_LOCALES.map(v=>v.code));
 export function resolveLocale(preference='system',languages=['en']){if(supported.has(preference))return preference;for(const value of languages){const tag=String(value).replace(/_/g,'-').toLowerCase(),base=tag.split('-')[0];if(base==='zh')return /hant|-(tw|hk|mo)(-|$)/.test(tag)?'zh-Hant':'zh-Hans';if(base==='pt')return 'pt-BR';if(supported.has(base))return base;}return 'en';}

@@ -10,27 +10,42 @@ export function activeMembership(state, now = Date.now()) {
   );
 }
 export const AD_POLICY = Object.freeze({
+  graceMs: 48 * 60 * 60 * 1000,
   minimumSaves: 3,
-  cooldownMs: 10 * 60 * 1000,
-  maxPerDay: 2,
+  savesBetweenAds: 3,
+  cooldownMs: 24 * 60 * 60 * 1000,
+  maxPerDay: 1,
+  minimumSessionMs: 2 * 60 * 1000,
+  afterSaveMs: 30 * 1000,
+  opportunityMs: 10 * 60 * 1000,
+  maximumTransitionDelayMs: 1000,
 });
 export function adDay(now) {
   const d = new Date(now);
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
-export function recordSave(old, now) {
+export function adState(old, now) {
   const sameDay = old?.day === adDay(now);
   return {
-    saves: Math.max(0, Number(old?.saves) || 0) + 1,
+    firstSeenAt: Number.isFinite(old?.firstSeenAt) ? old.firstSeenAt : now,
+    saves: Math.max(0, Number(old?.saves) || 0),
     day: adDay(now),
     shown: sameDay ? Math.max(0, Number(old?.shown) || 0) : 0,
-    lastShown: Number(old?.lastShown) || 0,
+    lastShown: Number.isFinite(old?.lastShown) ? old.lastShown : null,
+    lastShownSave: Math.max(0, Number(old?.lastShownSave) || 0),
   };
+}
+export function recordSave(old, now) {
+  const state = adState(old, now);
+  return {...state, saves: state.saves + 1};
 }
 export function canShowInterstitial(counts, now) {
   return (
+    !!counts &&
+    now - counts.firstSeenAt >= AD_POLICY.graceMs &&
     counts.saves >= AD_POLICY.minimumSaves &&
-    counts.shown < AD_POLICY.maxPerDay &&
-    now - counts.lastShown >= AD_POLICY.cooldownMs
+    counts.saves - counts.lastShownSave >= AD_POLICY.savesBetweenAds &&
+    (counts.day !== adDay(now) || counts.shown < AD_POLICY.maxPerDay) &&
+    (counts.lastShown === null || now - counts.lastShown >= AD_POLICY.cooldownMs)
   );
 }
